@@ -22,5 +22,5 @@ if(NOT raylib_FOUND)
     endif()
 endif()
 
-add_executable(TerrariaKlon main.cpp)
+add_executable(TerrariaKlon src/main.cpp src/Game.cpp src/Game.h)
 target_link_libraries(TerrariaKlon raylib)
