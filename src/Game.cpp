@@ -1,6 +1,6 @@
 #include "Game.h"
 
-Math::ImmutableVec2::ImmutableVec2(const float new_x, const float new_y) : x(new_x), y(new_y), limit(0) {}
+Math::ImmutableVec2::ImmutableVec2(const float newX, const float newY) : x(newX), y(newY) {}
 
 float Math::ImmutableVec2::getX() const {
 	return x;
@@ -8,10 +8,6 @@ float Math::ImmutableVec2::getX() const {
 
 float Math::ImmutableVec2::getY() const {
 	return y;
-}
-
-bool Math::ImmutableVec2::hasLimit() const {
-	return limit != 0;
 }
 
 float Math::ImmutableVec2::getLength() const {
@@ -39,20 +35,46 @@ Math::ImmutableVec2 Math::ImmutableVec2::div(const Math::ImmutableVec2 vec) cons
 	return Math::ImmutableVec2{(getX() / vec.getX()), (getY() / vec.getY())};
 }
 
-Math::MutableVec2::MutableVec2() : x(0), y(0), limit(0) {}
+// ==========
 
-Math::MutableVec2::MutableVec2(const float new_x, const float new_y) : x(new_x), y(new_y), limit(0) {}
+Math::MutableVec2::MutableVec2() {
+	limit = 0;
+	setX(0);
+	setY(0);
+}
 
-void Math::MutableVec2::setX(const float new_x) {
-	x = new_x;
+Math::MutableVec2::MutableVec2(const float newX, const float newY) {
+	limit = 0;
+	setX(x);
+	setY(y);
+}
+
+Math::MutableVec2::MutableVec2(const float newX, const float newY, const float newLimit) {
+	limit = newLimit;
+	setX(newX);
+	setY(newY);
+}
+
+void Math::MutableVec2::setX(const float newX) {
+	if(hasLimit()) {
+		x = std::min(x, limit);
+		x = std::max(x, -limit);
+	} else {
+		x = newX;
+	}
 }
 
 float Math::MutableVec2::getX() const {
 	return x;
 }
 
-void Math::MutableVec2::setY(const float new_y) {
-	y = new_y;
+void Math::MutableVec2::setY(const float newY) {
+	if(hasLimit()) {
+		y = std::min(y, limit);
+		y = std::max(y, -limit);
+	} else {
+		y = newY;
+	}
 }
 
 float Math::MutableVec2::getY() const {
@@ -97,39 +119,77 @@ void Math::MutableVec2::div(MutableVec2 vec) {
 	setY(getY() / vec.getY());
 }
 
-// ==============
+// ==========
 
 Entity::BaseEntity::BaseEntity() 
-	: movement_speed(0), health(10) {}
+	: movementSpeed(0), health(10) {}
 
-Entity::BaseEntity::BaseEntity(const Math::MutableVec2 pos_param) 
-	: pos(pos_param), movement_speed(0), health(10) {}
+Entity::BaseEntity::BaseEntity(const Math::MutableVec2 posParam) 
+	: pos(posParam), movementSpeed(0), health(10) {}
 
-Entity::BaseEntity::BaseEntity(const Math::MutableVec2 pos_param, float movement_speed_param, float health_param) 
-	: pos(pos_param), movement_speed(movement_speed_param), health(health_param) {}
+Entity::BaseEntity::BaseEntity(const Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) 
+	: pos(posParam), movementSpeed(movementSpeedParam), health(healthParam) {}
 
-void Entity::BaseEntity::updateHealth(const float new_health) {
-	health = new_health;
+void Entity::BaseEntity::updateMovementSpeed(const float newMovementSpeed) {
+	movementSpeed = newMovementSpeed;
 }
 
-float Entity::BaseEntity::get_health() const {
-	return health;
+float Entity::BaseEntity::getMovementSpeed() {
+	return movementSpeed;
 }
 
-// ==============
+void Entity::BaseEntity::updateHealth(const float newHealth) {
+	health = newHealth;
+}
+
+float Entity::BaseEntity::getHealth() const {
+	return health < 0 ? 0 : health;
+}
+
+void Entity::BaseEntity::follow(const Math::MutableVec2 position) {
+	Math::MutableVec2 way(position.getX(), position.getY());
+	way.sub(pos);
+	way.normalize();
+	way.mult(movementSpeed);
+
+	Math::MutableVec2 push(way.getX(), way.getY(), movementSpeed);
+	pos.add(push);
+}
+
+void Entity::BaseEntity::update() {
+	move();
+}
+
+void Entity::BaseEntity::render() {
+	DrawTexture(tex, pos.getX(), pos.getY(), BLACK);
+}
+
+// ==========
+
+Entity::Player::Player() : BaseEntity() {}
+
+Entity::Player::Player(Math::MutableVec2 posParam) : BaseEntity(posParam) {}
+Entity::Player::Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) 
+	: BaseEntity(posParam, movementSpeedParam, healthParam) {}
 
 void Entity::Player::move() {
-	if(IsKeyPressed(KEY_A)) {
-
+	if(IsKeyDown(KEY_A)) {
+		follow(Math::MutableVec2(pos.getX()-getMovementSpeed()*5, pos.getY()));
 	}
-	if(IsKeyPressed(KEY_D)) {
-
+	if(IsKeyDown(KEY_D)) {
+		follow(Math::MutableVec2(pos.getX()+getMovementSpeed()*5, pos.getY()));
 	}
 
-	if(IsKeyPressed(KEY_W)) {
-
+	if(IsKeyDown(KEY_W)) {
+		follow(Math::MutableVec2(pos.getX(), pos.getY()-getMovementSpeed()*5));
 	}
-	if(IsKeyPressed(KEY_S)) {
-
+	if(IsKeyDown(KEY_S)) {
+		follow(Math::MutableVec2(pos.getX(), pos.getY()+getMovementSpeed()*5));
 	}
 }
+
+void Entity::Player::render() {
+
+}
+
+// ==========

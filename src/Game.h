@@ -12,14 +12,10 @@ namespace Math {
 		const float x = 0;
 		const float y = 0;
 	public:
-		ImmutableVec2(float new_x, float new_y);
-
-		float limit;
+		ImmutableVec2(float mewX, float newY);
 
 		float getX() const;
 		float getY() const;
-
-		bool hasLimit() const;
 
 		float getLength() const;
 		ImmutableVec2 normalize();
@@ -37,11 +33,12 @@ namespace Math {
 	public:
 		float limit;
 		MutableVec2();
-		MutableVec2(float new_x, float new_y);
+		MutableVec2(float newX, float newY);
+		MutableVec2(float newX, float newY, float limit);
 
-		void setX(float new_y);
+		void setX(float newY);
 		float getX() const;
-		void setY(float new_y);
+		void setY(float newY);
 		float getY() const;
 
 		bool hasLimit() const;
@@ -65,34 +62,44 @@ namespace Game {
 	class Inventory {
 	public:
 		int size;
-
 	};
-
 };
 
 namespace Entity {
 	class BaseEntity {
 	private:
-		float movement_speed;
+		float movementSpeed;
 		float health;
 
 	public:
+		Texture2D tex;
+
 		BaseEntity();
-		explicit BaseEntity(Math::MutableVec2 pos_param);
-		BaseEntity(Math::MutableVec2 pos_param, float movement_speed_param, float health_param);
+		explicit BaseEntity(Math::MutableVec2 posParam);
+		BaseEntity(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 		Math::MutableVec2 pos;
 
-		void updateHealth(float new_health);
-		float get_health() const;
+		void updateMovementSpeed(float newMovementSpeed);
+		float getMovementSpeed();
 
+		void updateHealth(float newHealth);
+		float getHealth() const;
+
+		void follow(Math::MutableVec2 position);
 		virtual void move() = 0;
-
+		virtual void update();
+		virtual void render();
 	};
 
 	class Player : public BaseEntity {
 	public:
+		Player();
+		Player(Math::MutableVec2 posParam);
+		Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
+		
 		Game::Inventory inventory;
 		void move() override;
+		void render() override;
 	};
 }
 
