@@ -6,14 +6,16 @@ int main() {
 	SetTargetFPS(30);
 
 
-	Entity::Player player(Math::MutableVec2(400, 200), 40, 20);
-	player.tex = LoadTexture("");
-
+    Math::MutableVec2 playerPos{250, 250, 5};
+    std::cout << playerPos.getX();
+	auto player = new Entity::Player{playerPos, 20, 20};
+	player->tex = LoadTexture("../res/Player.png");
+    
 	while(!WindowShouldClose()) {
 		BeginDrawing();
 		ClearBackground(DARKGRAY);
-		player.render();
-		player.update();
+		player->update();
+        player->render();
 		EndDrawing();
 	}
 

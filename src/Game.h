@@ -94,7 +94,7 @@ namespace Entity {
 	class Player : public BaseEntity {
 	public:
 		Player();
-		Player(Math::MutableVec2 posParam);
+		explicit Player(Math::MutableVec2 posParam);
 		Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 		
 		Game::Inventory inventory;
@@ -102,6 +102,5 @@ namespace Entity {
 		void render() override;
 	};
 }
-
 
 #endif

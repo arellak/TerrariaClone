@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(TerrariaKlon)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(raylib 4.0 QUIET)
 
@@ -21,6 +21,10 @@ if(NOT raylib_FOUND)
         add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
     endif()
 endif()
+
+file(GLOB resources "res/*")
+file(COPY ${resources} DESTINATION "${CMAKE_BINARY_DIR}/res")
+
 
 add_executable(TerrariaKlon src/main.cpp src/Game.cpp src/Game.h)
 target_link_libraries(TerrariaKlon raylib)

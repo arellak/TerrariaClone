@@ -38,15 +38,15 @@ Math::ImmutableVec2 Math::ImmutableVec2::div(const Math::ImmutableVec2 vec) cons
 // ==========
 
 Math::MutableVec2::MutableVec2() {
-	limit = 0;
 	setX(0);
 	setY(0);
+	limit = 0;
 }
 
 Math::MutableVec2::MutableVec2(const float newX, const float newY) {
-	limit = 0;
 	setX(x);
 	setY(y);
+    limit = 0;
 }
 
 Math::MutableVec2::MutableVec2(const float newX, const float newY, const float newLimit) {
@@ -56,12 +56,12 @@ Math::MutableVec2::MutableVec2(const float newX, const float newY, const float n
 }
 
 void Math::MutableVec2::setX(const float newX) {
-	if(hasLimit()) {
-		x = std::min(x, limit);
-		x = std::max(x, -limit);
-	} else {
+	// if(hasLimit()) {
+	// 	x = std::min(x, limit);
+	// 	x = std::max(x, -limit);
+	// } else {
 		x = newX;
-	}
+	// }
 }
 
 float Math::MutableVec2::getX() const {
@@ -69,12 +69,12 @@ float Math::MutableVec2::getX() const {
 }
 
 void Math::MutableVec2::setY(const float newY) {
-	if(hasLimit()) {
-		y = std::min(y, limit);
-		y = std::max(y, -limit);
-	} else {
+	// if(hasLimit()) {
+		// y = std::min(y, limit);
+		// y = std::max(y, -limit);
+	// } else {
 		y = newY;
-	}
+	// }
 }
 
 float Math::MutableVec2::getY() const {
@@ -121,14 +121,25 @@ void Math::MutableVec2::div(MutableVec2 vec) {
 
 // ==========
 
-Entity::BaseEntity::BaseEntity() 
-	: movementSpeed(0), health(10) {}
+Entity::BaseEntity::BaseEntity() {
+    pos = Math::MutableVec2(0, 0);
+    movementSpeed = 0;
+    health = 0;
+}
 
-Entity::BaseEntity::BaseEntity(const Math::MutableVec2 posParam) 
-	: pos(posParam), movementSpeed(0), health(10) {}
+Entity::BaseEntity::BaseEntity(const Math::MutableVec2 posParam) {
+    std::cout << "without24" << std::endl;
+    pos = posParam;
+    movementSpeed = 0;
+    health = 0;
+}
 
-Entity::BaseEntity::BaseEntity(const Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) 
-	: pos(posParam), movementSpeed(movementSpeedParam), health(healthParam) {}
+Entity::BaseEntity::BaseEntity(const Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) {
+    pos = posParam;
+    movementSpeed = movementSpeedParam;
+    health = healthParam;    
+    std::cout << "yes" << std::endl;
+}
 
 void Entity::BaseEntity::updateMovementSpeed(const float newMovementSpeed) {
 	movementSpeed = newMovementSpeed;
@@ -161,16 +172,25 @@ void Entity::BaseEntity::update() {
 }
 
 void Entity::BaseEntity::render() {
-	DrawTexture(tex, pos.getX(), pos.getY(), BLACK);
+	DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
 }
 
 // ==========
 
 Entity::Player::Player() : BaseEntity() {}
-
-Entity::Player::Player(Math::MutableVec2 posParam) : BaseEntity(posParam) {}
-Entity::Player::Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) 
-	: BaseEntity(posParam, movementSpeedParam, healthParam) {}
+Entity::Player::Player(Math::MutableVec2 posParam) {
+    std::cout << "without1" << std::endl;
+    pos = posParam;
+    updateMovementSpeed(0);
+    updateHealth(0);
+}
+Entity::Player::Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) {
+    std::cout << "without2" << std::endl;
+    std::cout << posParam.getX() << std::endl;
+    pos = posParam;
+    updateMovementSpeed(movementSpeedParam);
+    updateHealth(healthParam);
+}
 
 void Entity::Player::move() {
 	if(IsKeyDown(KEY_A)) {
@@ -189,7 +209,8 @@ void Entity::Player::move() {
 }
 
 void Entity::Player::render() {
-
+    DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
+    // DrawRectangle(pos.getX(), pos.getY(), 30, 30, WHITE);
 }
 
 // ==========
