@@ -122,14 +122,6 @@ namespace Math {
 }
 
 namespace Game {
-
-	void World::step(const float dt) {
-		for(auto &entity : entities) {
-			float force = entity.mass * 9.81f;
-			
-		}
-	}
-
 	Camera::Camera() {
 		cam = {0};
 		cam.zoom = 1.0f;

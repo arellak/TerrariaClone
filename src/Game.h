@@ -66,14 +66,6 @@ namespace Item {
 }
 
 namespace Game {
-
-	class World {
-		public:
-			std::vector<Entity::BaseEntity&> entities;
-
-			void step(float dt);
-	};
-
 	class Camera {
 		public:
 			Camera2D cam;
@@ -92,7 +84,6 @@ namespace Entity {
 		private:
 			float movementSpeed;
 			float health;
-
 		public:
 			Texture2D tex;
 			float mass;
@@ -125,5 +116,22 @@ namespace Entity {
 			void render() override;
 	};
 }
+
+class World {
+	public:
+		std::vector<Entity::Player*> entities;
+		void step(const float dt) {
+
+			for(auto &entity : entities) {
+				float force = entity->mass * 9.81f;
+				
+				Math::MutableVec2 updated{0, force};
+				updated.normalize();
+				entity->pos.add(updated);
+			}
+
+		}
+};
+
 
 #endif
