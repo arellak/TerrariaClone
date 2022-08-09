@@ -2,20 +2,25 @@
 
 
 int main() {
-	InitWindow(800, 400, "Terraria Clone");
+	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Terraria Clone");
 	SetTargetFPS(30);
 
-
+	Game::Camera camera;
     Math::MutableVec2 playerPos{250, 250, 5};
-    std::cout << playerPos.getX();
-	auto player = new Entity::Player{playerPos, 20, 20};
-	player->tex = LoadTexture("../res/Player.png");
-    
+	Entity::Player player{playerPos, 20, 20};
+	player.tex = LoadTexture("../res/Player.png");
+
+	Math::MutableVec2 obstaclePos {200, 300};
 	while(!WindowShouldClose()) {
 		BeginDrawing();
 		ClearBackground(DARKGRAY);
-		player->update();
-        player->render();
+		player.update();
+		camera.follow(player.pos);
+		BeginMode2D(camera.cam);
+		DrawLine(obstaclePos.getX(), obstaclePos.getY(), obstaclePos.getX() + 200, obstaclePos.getY(), BLACK);
+        player.render();
+		EndMode2D();
+
 		EndDrawing();
 	}
 
