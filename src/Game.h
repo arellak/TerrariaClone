@@ -49,6 +49,7 @@ namespace Math {
 			bool hasLimit() const;
 
 			float getLength() const;
+			float getLengthIfOneIsZero(float divisor) const;
 			void normalize();
 
 			void add(MutableVec2 vec);
@@ -59,10 +60,6 @@ namespace Math {
 
 			std::string toString() const;
 	};
-}
-
-namespace Item {
-
 }
 
 namespace Game {
@@ -79,7 +76,28 @@ namespace Game {
 	};
 };
 
+namespace WorldObjects {
+	struct Tile {
+			Math::MutableVec2 position;
+			Math::MutableVec2 size;
+			Color color;
+			// Texture2D texture;
+	};
+}
+
+namespace Item {
+
+}
+
 namespace Entity {
+
+	enum class CollisionDirection {
+		LEFT,
+		RIGHT,
+		BOTTOM,
+		TOP
+	};
+
 	class BaseEntity {
 		private:
 			float movementSpeed;
@@ -87,6 +105,7 @@ namespace Entity {
 		public:
 			Texture2D tex;
 			float mass;
+			CollisionDirection collisionDirection;
 
 			BaseEntity();
 			explicit BaseEntity(Math::MutableVec2 posParam);
@@ -103,6 +122,7 @@ namespace Entity {
 			virtual void move() = 0;
 			virtual void update();
 			virtual void render();
+			bool collides(WorldObjects::Tile toCompare);
 	};
 
 	class Player : public BaseEntity {
@@ -117,20 +137,40 @@ namespace Entity {
 	};
 }
 
-class World {
-	public:
-		std::vector<Entity::Player*> entities;
-		void step(const float dt) {
+namespace World {
+	static std::vector<WorldObjects::Tile*> tiles;
+	static std::vector<Entity::Player*> players;
 
-			for(auto &entity : entities) {
-				float force = entity->mass * 9.81f;
+	static void step(const float dt) {
+		for(auto &entity : players) {
+			float force = (entity->mass * 9.81f) / dt;
 				
-				Math::MutableVec2 updated{0, force};
-				updated.normalize();
-				entity->pos.add(updated);
+			Math::MutableVec2 updated{0, force};
+			float length = updated.getLengthIfOneIsZero(dt) == 0 ? 1 : updated.getLengthIfOneIsZero(dt);
+			updated.setX(updated.getX() / length);
+			updated.setY(updated.getY() / length);
+
+			for(auto &tile : tiles) {
+				if(entity->collides(*tile)) {
+					entity->updateMovementSpeed(0);
+				}
 			}
 
+			entity->update();
+			if(entity->getMovementSpeed() > 0) {
+				entity->pos.add(updated);
+			}
 		}
+	}
+
+	static void render() {
+		for(auto &tile : tiles) {
+			DrawRectangle(tile->position.getX(), tile->position.getY(), tile->size.getX(), tile->size.getY(), tile->color);
+		}
+		for(auto &entity : players) {
+			entity->render();
+		}
+	}
 };
 
 

@@ -77,10 +77,25 @@ namespace Math {
 	}
 
 	float MutableVec2::getLength() const {
-		return std::abs(std::sqrt(pow(getX(), 2) + pow(getY(), 2)));
+		return std::sqrt(pow(getX(), 2) + pow(getY(), 2));
 	}
 
-	void MutableVec2::normalize() {
+	float MutableVec2::getLengthIfOneIsZero(const float divisor) const {
+		float x = 0;
+		float y = 0;
+
+		if(getX() == 0) {
+			x = 5;
+			y = getY() / divisor;
+		} else if(getY() == 0) {
+			x = getX() / divisor;
+			y = 5;
+		}
+
+		return std::sqrt(pow(x, 2) + pow(y, 2));	
+	}
+
+	void MutableVec2::normalize() {		
 		auto length = getLength() == 0 ? 1 : getLength();
 		setX(getX() / length);
 		setY(getY() / length);
@@ -174,16 +189,53 @@ namespace Entity {
 	}
 
 	void BaseEntity::follow(const Math::MutableVec2 position) {
-		// std::cout << position.toString() << std::endl;
 		Math::MutableVec2 way(position.getX(), position.getY());
 		way.sub(pos);
 		
 		way.normalize();
 		way.mult(movementSpeed);
 
-		Math::MutableVec2 push(way.getX(), way.getY(), movementSpeed);
+		Math::MutableVec2 push(way.getX(), way.getY());
 		pos.add(push);
 	}
+
+	bool BaseEntity::collides(WorldObjects::Tile toCompare) {
+		// bool inX = (pos.getX() <= toCompare.position.getX() + toCompare.size.getX()) && (pos.getX() >= toCompare.position.getX());
+		// bool inY = (pos.getY() <= toCompare.position.getY() + toCompare.size.getY()) && (pos.getY() >= toCompare.position.getY());
+		// Rectangle entityRect{pos.getX(), pos.getY(), tex.width, tex.height};
+		// Rectangle tileRect{toCompare.position.getX(), toCompare.position.getY(), toCompare.size.getX(), toCompare.size.getY()};
+		bool collidesTop = pos.getY() + tex.height >= toCompare.position.getY();
+		bool collidesBottom = pos.getY() <= toCompare.position.getY() + toCompare.size.getY();
+
+		bool collidesLeft = pos.getX() + tex.width >= toCompare.position.getX();
+		bool collidesRight = pos.getX() <= toCompare.position.getX() + toCompare.size.getX();
+		
+
+		// TODO check if its in the x boundaries
+		if(collidesTop) {
+			collisionDirection = CollisionDirection::TOP;
+			return true;
+		}
+
+		if(collidesBottom) {
+			collisionDirection = CollisionDirection::BOTTOM;
+			return true;
+		}
+
+		if(collidesLeft) {
+			collisionDirection = CollisionDirection::LEFT;
+			return true;
+		}
+
+		if(collidesRight) {
+			collisionDirection = CollisionDirection::RIGHT;
+			return true;
+		}
+
+
+		return false;
+	}
+
 
 	void BaseEntity::update() {
 		move();
@@ -210,19 +262,23 @@ namespace Entity {
 	void Player::move() {
 		if(IsKeyDown(KEY_A)) {
 			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
+			updateMovementSpeed(15);
 			follow(position);
 		}
 		if(IsKeyDown(KEY_D)) {
 			Math::MutableVec2 position{pos.getX()+getMovementSpeed()*5, pos.getY()};
+			updateMovementSpeed(15);
 			follow(position);
 		}
 
 		if(IsKeyDown(KEY_W)) {
 			Math::MutableVec2 position{pos.getX(), pos.getY()-getMovementSpeed()*5};
+			updateMovementSpeed(15);
 			follow(position);
 		}
 		if(IsKeyDown(KEY_S)) {
 			Math::MutableVec2 position{pos.getX(), pos.getY()+getMovementSpeed()*5};
+			updateMovementSpeed(15);
 			follow(position);
 		}
 	}
