@@ -8,8 +8,10 @@
 
 #include "raylib.h"
 
-extern constexpr int WINDOW_WIDTH = 800;
-extern constexpr int WINDOW_HEIGHT = 400;
+namespace WindowUtils {
+	static constexpr int WINDOW_WIDTH = 800;
+	static constexpr int WINDOW_HEIGHT = 400;
+}
 
 namespace Math {
 	class ImmutableVec2 {
@@ -106,6 +108,7 @@ namespace Entity {
 			Texture2D tex;
 			float mass;
 			CollisionDirection collisionDirection;
+			Math::MutableVec2 curveVector;
 
 			BaseEntity();
 			explicit BaseEntity(Math::MutableVec2 posParam);
@@ -118,21 +121,29 @@ namespace Entity {
 			void updateHealth(float newHealth);
 			float getHealth() const;
 
-			void follow(Math::MutableVec2 position);
-			virtual void move() = 0;
-			virtual void update();
+			void follow(Math::MutableVec2 position, float stepSize);
+			virtual void move(std::vector<WorldObjects::Tile*> tiles) = 0;
+			virtual void update(std::vector<WorldObjects::Tile*> tiles);
 			virtual void render();
-			bool collides(WorldObjects::Tile toCompare);
+			void jumpLeft();
+			void jumpRight();
+			void jumpUp();
+
+			bool collidesBottom(WorldObjects::Tile compare);
+			bool collidesTop(WorldObjects::Tile compare);
+			bool collidesLeft(WorldObjects::Tile compare);
+			bool collidesRight(WorldObjects::Tile compare);
 	};
 
 	class Player : public BaseEntity {
 		public:
 			Player();
 			explicit Player(Math::MutableVec2 posParam);
+			Player(Math::MutableVec2 posParam, float movementSpeedParam);
 			Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 			
 			Game::Inventory inventory;
-			void move() override;
+			void move(std::vector<WorldObjects::Tile*> tiles) override;
 			void render() override;
 	};
 }
@@ -141,24 +152,26 @@ namespace World {
 	static std::vector<WorldObjects::Tile*> tiles;
 	static std::vector<Entity::Player*> players;
 
+
 	static void step(const float dt) {
-		for(auto &entity : players) {
-			float force = (entity->mass * 9.81f) / dt;
-				
-			Math::MutableVec2 updated{0, force};
-			float length = updated.getLengthIfOneIsZero(dt) == 0 ? 1 : updated.getLengthIfOneIsZero(dt);
-			updated.setX(updated.getX() / length);
-			updated.setY(updated.getY() / length);
+		for(auto &player : players) {
+			player->update(tiles);
 
-			for(auto &tile : tiles) {
-				if(entity->collides(*tile)) {
-					entity->updateMovementSpeed(0);
+			// GRAVITY STUFF
+			float force = (player->mass * 9.81f) / dt;
+			
+			Math::MutableVec2 gravityVec{0, force};
+			float length = gravityVec.getLengthIfOneIsZero(dt) == 0 ? 1 : gravityVec.getLengthIfOneIsZero(dt);
+			gravityVec.setX(gravityVec.getX() / length);
+			gravityVec.setY(gravityVec.getY() / length);
+
+			if(player->getMovementSpeed() > 0) {
+				for(auto &tile : tiles) {
+					if(player->collidesTop(*tile)) {
+						return;
+					}
 				}
-			}
-
-			entity->update();
-			if(entity->getMovementSpeed() > 0) {
-				entity->pos.add(updated);
+				player->pos.add(gravityVec);
 			}
 		}
 	}
@@ -167,8 +180,8 @@ namespace World {
 		for(auto &tile : tiles) {
 			DrawRectangle(tile->position.getX(), tile->position.getY(), tile->size.getX(), tile->size.getY(), tile->color);
 		}
-		for(auto &entity : players) {
-			entity->render();
+		for(auto &player : players) {
+			player->render();
 		}
 	}
 };

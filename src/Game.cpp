@@ -144,7 +144,7 @@ namespace Game {
 
 	void Camera::follow(const Math::MutableVec2 pos) {
 		cam.target = Vector2 {pos.getX() + 20, pos.getY() + 20};
-		cam.offset = Vector2 {WINDOW_WIDTH/2, WINDOW_HEIGHT/2};
+		cam.offset = Vector2 {WindowUtils::WINDOW_WIDTH/2, WindowUtils::WINDOW_HEIGHT/2};
 		cam.rotation = 0.0f;
 		cam.zoom += ((float) GetMouseWheelMove() * 0.1f);
 		if(cam.zoom > 3.0f) cam.zoom = 3.0f;
@@ -158,18 +158,21 @@ namespace Entity {
 		pos = Math::MutableVec2(0, 0);
 		movementSpeed = 0;
 		health = 0;
+		curveVector = {0, 0};
 	}
 
 	BaseEntity::BaseEntity(const Math::MutableVec2 posParam) {
 		pos = posParam;
 		movementSpeed = 0;
 		health = 0;
+		curveVector = {0, 0};
 	}
 
 	BaseEntity::BaseEntity(const Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) {
 		pos = posParam;
 		movementSpeed = movementSpeedParam;
-		health = healthParam;    
+		health = healthParam;
+		curveVector = {0, 0};    
 	}
 
 	void BaseEntity::updateMovementSpeed(const float newMovementSpeed) {
@@ -188,99 +191,150 @@ namespace Entity {
 		return health < 0 ? 0 : health;
 	}
 
-	void BaseEntity::follow(const Math::MutableVec2 position) {
-		Math::MutableVec2 way(position.getX(), position.getY());
-		way.sub(pos);
-		
-		way.normalize();
-		way.mult(movementSpeed);
+	void BaseEntity::follow(const Math::MutableVec2 position, const float stepSize) {
+		Math::MutableVec2 difference(position.getX(), position.getY());
+		difference.sub(pos);
 
-		Math::MutableVec2 push(way.getX(), way.getY());
-		pos.add(push);
+		difference.normalize();
+		difference.mult(stepSize);
+
+		pos.add(difference);
 	}
 
-	bool BaseEntity::collides(WorldObjects::Tile toCompare) {
-		// bool inX = (pos.getX() <= toCompare.position.getX() + toCompare.size.getX()) && (pos.getX() >= toCompare.position.getX());
-		// bool inY = (pos.getY() <= toCompare.position.getY() + toCompare.size.getY()) && (pos.getY() >= toCompare.position.getY());
-		// Rectangle entityRect{pos.getX(), pos.getY(), tex.width, tex.height};
-		// Rectangle tileRect{toCompare.position.getX(), toCompare.position.getY(), toCompare.size.getX(), toCompare.size.getY()};
-		bool collidesTop = pos.getY() + tex.height >= toCompare.position.getY();
-		bool collidesBottom = pos.getY() <= toCompare.position.getY() + toCompare.size.getY();
-
-		bool collidesLeft = pos.getX() + tex.width >= toCompare.position.getX();
-		bool collidesRight = pos.getX() <= toCompare.position.getX() + toCompare.size.getX();
-		
-
-		// TODO check if its in the x boundaries
-		if(collidesTop) {
-			collisionDirection = CollisionDirection::TOP;
-			return true;
-		}
-
-		if(collidesBottom) {
-			collisionDirection = CollisionDirection::BOTTOM;
-			return true;
-		}
-
-		if(collidesLeft) {
-			collisionDirection = CollisionDirection::LEFT;
-			return true;
-		}
-
-		if(collidesRight) {
-			collisionDirection = CollisionDirection::RIGHT;
-			return true;
-		}
-
-
-		return false;
-	}
-
-
-	void BaseEntity::update() {
-		move();
+	void BaseEntity::update(const std::vector<WorldObjects::Tile*> tiles) {
+		move(tiles);
 	}
 
 	void BaseEntity::render() {
 		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
 	}
 
+	bool BaseEntity::collidesBottom(const WorldObjects::Tile compare) {
+		bool inX = (pos.getX() <= compare.position.getX() + compare.size.getX()) 
+			&& (pos.getX() + tex.width >= compare.position.getX());
+
+		float offset = getMovementSpeed() / 2;
+		float posY = pos.getY() - offset;
+		return inX && (posY > compare.position.getY()) && (posY < compare.position.getY() + compare.size.getY());
+	}
+
+	bool BaseEntity::collidesTop(const WorldObjects::Tile compare) {
+		bool inX = (pos.getX() <= compare.position.getX() + compare.size.getX()) 
+			&& (pos.getX() + tex.width >= compare.position.getX());
+
+		float offset = getMovementSpeed() / 2;
+		float posY = pos.getY() + tex.height + offset;		
+		return inX && (posY < compare.position.getY() + compare.size.getY()) && (posY > compare.position.getY());
+	}
+
+	bool BaseEntity::collidesLeft(const WorldObjects::Tile compare) {
+		bool inY = (pos.getY() <= compare.position.getY() + compare.size.getY()) 
+			&& (pos.getY() + tex.height >= compare.position.getY());
+		
+		float offset = getMovementSpeed() / 2;
+		float posX = pos.getX() + tex.width + offset;
+		return inY && (posX < compare.position.getX() + compare.size.getX()) && (posX > compare.position.getX());
+	}
+
+	bool BaseEntity::collidesRight(const WorldObjects::Tile compare) {
+		bool inY = (pos.getY() <= compare.position.getY() + compare.size.getY()) 
+			&& (pos.getY() + tex.height >= compare.position.getY());
+		
+		float offset = getMovementSpeed() / 2;
+		float posX = pos.getX() - offset;
+		return inY && (posX > compare.position.getX()) && (posX < compare.position.getX() + compare.size.getX());
+	}
+
+	void BaseEntity::jumpLeft() {
+
+	}
+
+	void BaseEntity::jumpRight() {
+		
+	}
+
+	void BaseEntity::jumpUp() {
+		
+	}
+
 	// ==========
 
 	Player::Player() : BaseEntity() {}
-	Player::Player(Math::MutableVec2 posParam) {
+	Player::Player(const Math::MutableVec2 posParam) {
 		pos = posParam;
 		updateMovementSpeed(0);
 		updateHealth(0);
 	}
-	Player::Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) {
+	Player::Player(const Math::MutableVec2 posParam, const float movementSpeedParam) {
+		pos = posParam;
+		updateMovementSpeed(movementSpeedParam);
+	}
+	Player::Player(const Math::MutableVec2 posParam, const float movementSpeedParam, const float healthParam) {
 		pos = posParam;
 		updateMovementSpeed(movementSpeedParam);
 		updateHealth(healthParam);
 	}
 
-	void Player::move() {
+	void Player::move(const std::vector<WorldObjects::Tile*> tiles) {
+		static int timer = 0;
+		timer++;
+
+		if(IsKeyPressed(KEY_SPACE)) {
+			curveVector.setX(0);
+			curveVector.setY(0);
+			
+			curveVector.setX(pos.getX());
+			curveVector.setY(pos.getY() - getMovementSpeed() * 5);
+		}
+
+		if(timer % 30 == 0) {
+			curveVector.setX(0);
+			curveVector.setY(0);
+			timer = 0;
+		}
+
+		if(curveVector.getY() > 0) {
+			follow(curveVector, getMovementSpeed());
+			return;
+		}	
+
 		if(IsKeyDown(KEY_A)) {
 			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
-			updateMovementSpeed(15);
-			follow(position);
+			for(auto &tile : tiles) {
+				if(collidesRight(*tile)) return;
+			}
+
+			follow(position, getMovementSpeed());
 		}
 		if(IsKeyDown(KEY_D)) {
 			Math::MutableVec2 position{pos.getX()+getMovementSpeed()*5, pos.getY()};
-			updateMovementSpeed(15);
-			follow(position);
+			for(auto &tile : tiles) {
+				if(collidesLeft(*tile)) return;
+			}
+
+			follow(position, getMovementSpeed());
 		}
 
 		if(IsKeyDown(KEY_W)) {
-			Math::MutableVec2 position{pos.getX(), pos.getY()-getMovementSpeed()*5};
-			updateMovementSpeed(15);
-			follow(position);
+			const float MAX_HEIGHT = pos.getY()-(getMovementSpeed() * 5);
+			
+			Math::MutableVec2 position{pos.getX(), MAX_HEIGHT};
+			for(auto &tile : tiles) {
+				if(collidesBottom(*tile)) return;
+			}
+
+			follow(position, getMovementSpeed());
 		}
-		if(IsKeyDown(KEY_S)) {
-			Math::MutableVec2 position{pos.getX(), pos.getY()+getMovementSpeed()*5};
-			updateMovementSpeed(15);
-			follow(position);
-		}
+
+		// if(IsKeyDown(KEY_S)) {
+		// 	Math::MutableVec2 position{pos.getX(), pos.getY()+getMovementSpeed()*5};
+		// 	for(auto &tile : tiles) {
+		// 		if(collidesTop(*tile)) return;
+				
+		// 	}
+
+		// 	follow(position);
+		// }
 	}
 
 	void Player::render() {
