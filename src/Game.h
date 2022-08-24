@@ -80,7 +80,7 @@ namespace Game {
 		public:
 			Camera2D cam;
 			Camera();
-			
+
 			void follow(Math::MutableVec2 pos);
 	};
 
@@ -139,9 +139,10 @@ namespace Entity {
 			float getHealth() const;
 
 			void follow(Math::MutableVec2 position, float stepSize);
-			virtual void move(std::vector<WorldObjects::Tile*> tiles) = 0;
-			virtual void update(std::vector<WorldObjects::Tile*> tiles);
+			virtual void move(std::vector<WorldObjects::Tile*>& tiles) = 0;
+			virtual void update(std::vector<WorldObjects::Tile*>& tiles);
 			virtual void render();
+			virtual void jump(std::vector<WorldObjects::Tile*>& tiles);
 
 			bool collidesBottom(WorldObjects::Tile compare);
 			bool collidesTop(WorldObjects::Tile compare);
@@ -157,43 +158,105 @@ namespace Entity {
 			Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 			
 			Game::Inventory inventory;
-			void move(std::vector<WorldObjects::Tile*> tiles) override;
+			void move(std::vector<WorldObjects::Tile*>& tiles) override;
 			void render() override;
+			void jump(std::vector<WorldObjects::Tile*>& tiles) override;
 	};
 }
 
 namespace World {
 	static std::vector<WorldObjects::Tile*> tiles;
-	static std::vector<Entity::Player*> players;
-	static Entity::Player* player;
+	static Entity::Player* activePlayer;
+
+	static Entity::Player createPlayer(const Math::MutableVec2 startPos, const float movementSpeed) {
+		Entity::Player player{startPos, movementSpeed};
+		activePlayer = &player;
+		player.mass = 80;
+		player.tex = LoadTexture("../res/Player.png");
+		return player;
+	}
+
+	static WorldObjects::Tile createTile(Math::MutableVec2 position, Math::MutableVec2 size, Color color) {
+		WorldObjects::Tile tile{position, size, color};
+		tiles.push_back(&tile);
+		return tile;
+	}
 
 	static void step(const float dt) {
-		player->update(tiles);
+		activePlayer->update(tiles);
 
-			// GRAVITY STUFF
-			float force = (player->mass * 9.81f) / dt;
+		// GRAVITY STUFF
+		float force = (activePlayer->mass * 9.81f) / dt;
 			
-			Math::MutableVec2 gravityVec{0, force};
-			float length = gravityVec.getLengthIfOneIsZero(dt) == 0 ? 1 : gravityVec.getLengthIfOneIsZero(dt);
-			gravityVec.setX(gravityVec.getX() / length);
-			gravityVec.setY(gravityVec.getY() / length);
+		Math::MutableVec2 gravityVec{0, force};
+		float length = gravityVec.getLengthIfOneIsZero(dt) == 0 ? 1 : gravityVec.getLengthIfOneIsZero(dt);
+		gravityVec.setX(gravityVec.getX() / length);
+		gravityVec.setY(gravityVec.getY() / length);
 
-			if(player->getMovementSpeed() > 0) {
-				for(auto &tile : tiles) {
-					if(player->collidesTop(*tile)) {
-						player->onGround = true;
-						return;
-					}
+		if(activePlayer->getMovementSpeed() > 0) {
+			for(auto &tile : tiles) {
+				if(activePlayer->collidesTop(*tile)) {
+					activePlayer->onGround = true;
+					return;
 				}
-				player->pos.add(gravityVec);
 			}
+			activePlayer->pos.add(gravityVec);
+		}
 	}
 
 	static void render() {
 		for(auto &tile : tiles) {
 			DrawRectangle(tile->position.getX(), tile->position.getY(), tile->size.getX(), tile->size.getY(), tile->color);
 		}
-		player->render();
+		activePlayer->render();
+	}
+
+	static WorldObjects::Tile* getNearestTile(Math::MutableVec2 vec) {
+		WorldObjects::Tile* currentTile = nullptr;
+		float currentLength = 0;
+
+		for(auto tile : tiles) {
+			Math::MutableVec2 temp;
+			float xVal = 0;
+			float yVal = 0;
+			if(vec.getX() > tile->position.getX()) {
+				xVal = tile->position.getX() - vec.getX();
+			} else {
+				xVal = vec.getX() - tile->position.getX();
+			}
+
+			if(vec.getY() > tile->position.getY()) {
+				yVal = tile->position.getY() - vec.getY();
+			} else {
+				yVal = vec.getY() - tile->position.getY();
+			}
+
+			temp.setX(xVal);
+			temp.setY(yVal);
+
+			if(currentTile == nullptr) {
+				currentLength = temp.getLength();
+				currentTile = tile;
+				continue;
+			}
+
+			if(temp.getLength() < currentLength) {
+				currentLength = temp.getLength();
+				currentTile = tile;
+			}
+		}
+		return currentTile;
+	}
+
+	static WorldObjects::Tile* getSelectedTile(const Math::MutableVec2 mousePos) {
+		for(auto tile : tiles) {
+			bool inX = (mousePos.getX() < tile->position.getX() + tile->size.getX()) && (mousePos.getX() > tile->position.getX());
+			bool inY = (mousePos.getY() < tile->position.getY() + tile->size.getY()) && (mousePos.getY() > tile->position.getY());
+			if(inX && inY) {
+				return tile;
+			}
+		}
+		return nullptr;
 	}
 };
 

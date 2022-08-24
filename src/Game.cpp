@@ -199,7 +199,7 @@ namespace Entity {
 		pos.add(difference);
 	}
 
-	void BaseEntity::update(const std::vector<WorldObjects::Tile*> tiles) {
+	void BaseEntity::update(std::vector<WorldObjects::Tile*>& tiles) {
 		move(tiles);
 	}
 
@@ -243,6 +243,10 @@ namespace Entity {
 		return inY && (posX > compare.position.getX()) && (posX < compare.position.getX() + compare.size.getX());
 	}
 
+	void BaseEntity::jump(std::vector<WorldObjects::Tile*>& tiles) {
+
+	}
+
 	// ==========
 
 	Player::Player() : BaseEntity() {
@@ -266,9 +270,7 @@ namespace Entity {
 		direction = Game::Direction::NONE;
 	}
 
-	void Player::move(const std::vector<WorldObjects::Tile*> tiles) {
-		static int jumpPixelCount = 0;
-
+	void Player::move(std::vector<WorldObjects::Tile*>& tiles) {
 		float startX = pos.getX();
 
 		if(onGround && IsKeyPressed(KEY_SPACE)) {
@@ -276,24 +278,7 @@ namespace Entity {
 			onGround = false;
 		}
 
-		if(jumping) {
-			jumpPixelCount++;
-
-			if(jumpPixelCount >= MAX_JUMP_HEIGHT) {
-				if(direction == Game::Direction::EAST) {
-					pos.updateX(Game::FPS_COUNT/2);
-				} else if(direction == Game::Direction::WEST) {
-					pos.updateX(-Game::FPS_COUNT/2);
-				}
-
-				pos.updateY(-Game::FPS_COUNT/5);
-				jumpPixelCount = 0;
-				jumping = false;
-				return;
-			}
-
-			pos.updateY(-Game::FPS_COUNT/2);
-		}
+		jump(tiles);
 
 		if(IsKeyDown(KEY_A)) {
 			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
@@ -318,12 +303,15 @@ namespace Entity {
 			follow(position, getMovementSpeed());
 		}
 
-		if(IsKeyDown(KEY_W)) {
+		if(IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_W)) {
 			const float MAX_HEIGHT = pos.getY()-(getMovementSpeed() * 5);
 			
 			Math::MutableVec2 position{pos.getX(), MAX_HEIGHT};
 			for(auto &tile : tiles) {
-				if(collidesBottom(*tile)) return;
+				if(collidesBottom(*tile)) {
+					pos.setY(tile->position.getY()+getMovementSpeed() + 5);
+					return;
+				}
 			}
 
 			if(direction != Game::Direction::NORTH) {
@@ -332,24 +320,42 @@ namespace Entity {
 			follow(position, getMovementSpeed());
 		}
 
-		// if(IsKeyDown(KEY_S)) {
-		// 	Math::MutableVec2 position{pos.getX(), pos.getY()+getMovementSpeed()*5};
-		// 	for(auto &tile : tiles) {
-		// 		if(collidesTop(*tile)) return;
-				
-		// 	}
-
-		// 	follow(position);
-		// }
-
 		if(pos.getX() == startX) {
 			direction = Game::Direction::NONE;
 		}
-
 	}
 
 	void Player::render() {
 		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
+	}
+
+	void Player::jump(std::vector<WorldObjects::Tile*>& tiles) {
+		static int jumpPixelCount = 0;
+		if(jumping) {
+			jumpPixelCount++;
+
+			if(jumpPixelCount >= MAX_JUMP_HEIGHT) {
+				if(direction == Game::Direction::EAST) {
+					pos.updateX(Game::FPS_COUNT/3);
+				} else if(direction == Game::Direction::WEST) {
+					pos.updateX(-Game::FPS_COUNT/3);
+				}
+
+				pos.updateY(-Game::FPS_COUNT/4);
+				
+				jumpPixelCount = 0;
+				jumping = false;
+				return;
+			}
+
+			for(auto tile : tiles) {
+				if(collidesBottom(*tile)) {
+					pos.setY(tile->position.getY()+getMovementSpeed() + 5);
+					return;
+				}
+			}
+			pos.updateY(-Game::FPS_COUNT/2);
+		}
 	}
 
 }
