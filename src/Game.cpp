@@ -32,10 +32,6 @@ namespace Math {
 		return (getX() * vec.getX()) + (getY() * vec.getY());
 	}
 
-	ImmutableVec2 ImmutableVec2::div(const ImmutableVec2 vec) const {
-		return ImmutableVec2{(getX() / vec.getX()), (getY() / vec.getY())};
-	}
-
 	// ==========
 
 	MutableVec2::MutableVec2() {
@@ -72,6 +68,14 @@ namespace Math {
 		return y;
 	}
 
+	void MutableVec2::updateX(const float value) {
+		x += value;
+	}
+
+	void MutableVec2::updateY(const float value) {
+		y += value;
+	}
+
 	bool MutableVec2::hasLimit() const {
 		return limit != 0;
 	}
@@ -102,13 +106,13 @@ namespace Math {
 	}
 
 	void MutableVec2::add(MutableVec2 vec) {
-		setX(getX() + vec.getX());
-		setY(getY() + vec.getY());
+		updateX(vec.getX());
+		updateY(vec.getY());
 	}
 
 	void MutableVec2::sub(MutableVec2 vec) {
-		setX(getX() - vec.getX());
-		setY(getY() - vec.getY());
+		updateX(-vec.getX());
+		updateY(-vec.getY());
 	}
 
 	void MutableVec2::mult(float value) {
@@ -120,11 +124,6 @@ namespace Math {
 		return (getX() * vec.getX()) + (getY() * vec.getY());
 	}
 
-	void MutableVec2::div(MutableVec2 vec) {
-		setX(getX() / vec.getX());
-		setY(getY() / vec.getY());
-	}
-
 	std::string MutableVec2::toString() const {
 		std::string str;
 		str.append("[x:{").append(std::to_string(getX()))
@@ -132,7 +131,6 @@ namespace Math {
 		.append(std::to_string(getLength())).append("}]");
 		return str;
 	}
-
 
 }
 
@@ -158,21 +156,21 @@ namespace Entity {
 		pos = Math::MutableVec2(0, 0);
 		movementSpeed = 0;
 		health = 0;
-		curveVector = {0, 0};
+		direction = Game::Direction::NONE;
 	}
 
 	BaseEntity::BaseEntity(const Math::MutableVec2 posParam) {
 		pos = posParam;
 		movementSpeed = 0;
 		health = 0;
-		curveVector = {0, 0};
+		direction = Game::Direction::NONE;
 	}
 
 	BaseEntity::BaseEntity(const Math::MutableVec2 posParam, float movementSpeedParam, float healthParam) {
 		pos = posParam;
 		movementSpeed = movementSpeedParam;
 		health = healthParam;
-		curveVector = {0, 0};    
+		direction = Game::Direction::NONE;
 	}
 
 	void BaseEntity::updateMovementSpeed(const float newMovementSpeed) {
@@ -245,58 +243,57 @@ namespace Entity {
 		return inY && (posX > compare.position.getX()) && (posX < compare.position.getX() + compare.size.getX());
 	}
 
-	void BaseEntity::jumpLeft() {
-
-	}
-
-	void BaseEntity::jumpRight() {
-		
-	}
-
-	void BaseEntity::jumpUp() {
-		
-	}
-
 	// ==========
 
-	Player::Player() : BaseEntity() {}
+	Player::Player() : BaseEntity() {
+		direction = Game::Direction::NONE;
+	}
 	Player::Player(const Math::MutableVec2 posParam) {
 		pos = posParam;
 		updateMovementSpeed(0);
 		updateHealth(0);
+		direction = Game::Direction::NONE;
 	}
 	Player::Player(const Math::MutableVec2 posParam, const float movementSpeedParam) {
 		pos = posParam;
 		updateMovementSpeed(movementSpeedParam);
+		direction = Game::Direction::NONE;
 	}
 	Player::Player(const Math::MutableVec2 posParam, const float movementSpeedParam, const float healthParam) {
 		pos = posParam;
 		updateMovementSpeed(movementSpeedParam);
 		updateHealth(healthParam);
+		direction = Game::Direction::NONE;
 	}
 
 	void Player::move(const std::vector<WorldObjects::Tile*> tiles) {
-		static int timer = 0;
-		timer++;
+		static int jumpPixelCount = 0;
 
-		if(IsKeyPressed(KEY_SPACE)) {
-			curveVector.setX(0);
-			curveVector.setY(0);
-			
-			curveVector.setX(pos.getX());
-			curveVector.setY(pos.getY() - getMovementSpeed() * 5);
+		float startX = pos.getX();
+
+		if(onGround && IsKeyPressed(KEY_SPACE)) {
+			jumping = true;
+			onGround = false;
 		}
 
-		if(timer % 30 == 0) {
-			curveVector.setX(0);
-			curveVector.setY(0);
-			timer = 0;
-		}
+		if(jumping) {
+			jumpPixelCount++;
 
-		if(curveVector.getY() > 0) {
-			follow(curveVector, getMovementSpeed());
-			return;
-		}	
+			if(jumpPixelCount >= MAX_JUMP_HEIGHT) {
+				if(direction == Game::Direction::EAST) {
+					pos.updateX(Game::FPS_COUNT/2);
+				} else if(direction == Game::Direction::WEST) {
+					pos.updateX(-Game::FPS_COUNT/2);
+				}
+
+				pos.updateY(-Game::FPS_COUNT/5);
+				jumpPixelCount = 0;
+				jumping = false;
+				return;
+			}
+
+			pos.updateY(-Game::FPS_COUNT/2);
+		}
 
 		if(IsKeyDown(KEY_A)) {
 			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
@@ -304,6 +301,9 @@ namespace Entity {
 				if(collidesRight(*tile)) return;
 			}
 
+			if(direction != Game::Direction::WEST) {
+				direction = Game::Direction::WEST;
+			}
 			follow(position, getMovementSpeed());
 		}
 		if(IsKeyDown(KEY_D)) {
@@ -312,6 +312,9 @@ namespace Entity {
 				if(collidesLeft(*tile)) return;
 			}
 
+			if(direction != Game::Direction::EAST) {
+				direction = Game::Direction::EAST;
+			}
 			follow(position, getMovementSpeed());
 		}
 
@@ -323,6 +326,9 @@ namespace Entity {
 				if(collidesBottom(*tile)) return;
 			}
 
+			if(direction != Game::Direction::NORTH) {
+				direction = Game::Direction::NORTH;
+			}
 			follow(position, getMovementSpeed());
 		}
 
@@ -335,6 +341,11 @@ namespace Entity {
 
 		// 	follow(position);
 		// }
+
+		if(pos.getX() == startX) {
+			direction = Game::Direction::NONE;
+		}
+
 	}
 
 	void Player::render() {

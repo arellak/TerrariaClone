@@ -30,7 +30,6 @@ namespace Math {
 			ImmutableVec2 add(ImmutableVec2 vec) const;
 			ImmutableVec2 sub(ImmutableVec2 vec) const;
 			float mult(ImmutableVec2 vec) const;
-			ImmutableVec2 div(ImmutableVec2 vec) const;
 	};
 
 	class MutableVec2 {
@@ -48,6 +47,9 @@ namespace Math {
 			void setY(float newY);
 			float getY() const;
 
+			void updateX(float value);
+			void updateY(float value);
+
 			bool hasLimit() const;
 
 			float getLength() const;
@@ -58,17 +60,27 @@ namespace Math {
 			void sub(MutableVec2 vec);
 			float mult(MutableVec2 vec);
 			void mult(float value);
-			void div(MutableVec2 vec);
 
 			std::string toString() const;
 	};
 }
 
 namespace Game {
+	static const int FPS_COUNT = 30;
+
+	enum class Direction {
+		WEST,
+		EAST,
+		SOUTH,
+		NORTH,
+		NONE,
+	};
+
 	class Camera {
 		public:
 			Camera2D cam;
 			Camera();
+			
 			void follow(Math::MutableVec2 pos);
 	};
 
@@ -108,7 +120,12 @@ namespace Entity {
 			Texture2D tex;
 			float mass;
 			CollisionDirection collisionDirection;
-			Math::MutableVec2 curveVector;
+			bool jumping;
+			bool onGround;
+			Game::Direction direction;
+
+
+			const float MAX_JUMP_HEIGHT = 10; //
 
 			BaseEntity();
 			explicit BaseEntity(Math::MutableVec2 posParam);
@@ -125,9 +142,6 @@ namespace Entity {
 			virtual void move(std::vector<WorldObjects::Tile*> tiles) = 0;
 			virtual void update(std::vector<WorldObjects::Tile*> tiles);
 			virtual void render();
-			void jumpLeft();
-			void jumpRight();
-			void jumpUp();
 
 			bool collidesBottom(WorldObjects::Tile compare);
 			bool collidesTop(WorldObjects::Tile compare);
@@ -151,11 +165,10 @@ namespace Entity {
 namespace World {
 	static std::vector<WorldObjects::Tile*> tiles;
 	static std::vector<Entity::Player*> players;
-
+	static Entity::Player* player;
 
 	static void step(const float dt) {
-		for(auto &player : players) {
-			player->update(tiles);
+		player->update(tiles);
 
 			// GRAVITY STUFF
 			float force = (player->mass * 9.81f) / dt;
@@ -168,21 +181,19 @@ namespace World {
 			if(player->getMovementSpeed() > 0) {
 				for(auto &tile : tiles) {
 					if(player->collidesTop(*tile)) {
+						player->onGround = true;
 						return;
 					}
 				}
 				player->pos.add(gravityVec);
 			}
-		}
 	}
 
 	static void render() {
 		for(auto &tile : tiles) {
 			DrawRectangle(tile->position.getX(), tile->position.getY(), tile->size.getX(), tile->size.getY(), tile->color);
 		}
-		for(auto &player : players) {
-			player->render();
-		}
+		player->render();
 	}
 };
 
