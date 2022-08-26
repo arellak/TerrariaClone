@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "raylib.h"
 
@@ -65,6 +66,28 @@ namespace Math {
 	};
 }
 
+namespace Item {
+	enum class ItemType {
+		WEAPON,
+		TOOL,
+		USABLE,
+	};
+
+	class BaseItem {
+		public:
+			int id;
+			ItemType type;
+			std::string label;
+			Texture2D icon;
+
+			bool repairable;
+			bool destructable;
+
+			BaseItem(std::string iconPath, float scaleFactor);
+			
+	};
+}
+
 namespace Game {
 	static const int FPS_COUNT = 30;
 
@@ -86,7 +109,39 @@ namespace Game {
 
 	class Inventory {
 		public:
-			int size;
+			bool isOpen = false;
+			std::string label{"Inventory"};
+			Math::MutableVec2 position;
+			Math::MutableVec2 windowSize;
+			std::map<int, Math::MutableVec2> slots;
+			std::map<int, Item::BaseItem*> content;
+
+			const Color inactiveSlotColor = BLACK;
+			const Color selectedSlotColor = RED;
+
+			bool hasItemOnCursor = false;
+
+			int activeSlot = -1;
+			int selectedItemSlot = -1;
+			
+			const int slotSize = 35;
+			const int padding = 8;
+			
+			Inventory();
+
+			void open();
+			void close();
+			void update();
+			void render();
+			void renderSlots();
+			void selectItem();
+			void renderSlotAt(int pos);
+			void renderSlotContent();
+
+
+			bool mouseInInventory();
+			int getSlot(Math::MutableVec2 position);
+			void addItem(int slot, Item::BaseItem);
 	};
 };
 
@@ -99,12 +154,7 @@ namespace WorldObjects {
 	};
 }
 
-namespace Item {
-
-}
-
 namespace Entity {
-
 	enum class CollisionDirection {
 		LEFT,
 		RIGHT,
@@ -117,15 +167,15 @@ namespace Entity {
 			float movementSpeed;
 			float health;
 		public:
-			Texture2D tex;
+			const float MAX_JUMP_HEIGHT = 10; //
+
 			float mass;
-			CollisionDirection collisionDirection;
 			bool jumping;
 			bool onGround;
+
+			Texture2D tex;
+			CollisionDirection collisionDirection;
 			Game::Direction direction;
-
-
-			const float MAX_JUMP_HEIGHT = 10; //
 
 			BaseEntity();
 			explicit BaseEntity(Math::MutableVec2 posParam);
@@ -152,6 +202,8 @@ namespace Entity {
 
 	class Player : public BaseEntity {
 		public:
+			WorldObjects::Tile* selectedTile;
+
 			Player();
 			explicit Player(Math::MutableVec2 posParam);
 			Player(Math::MutableVec2 posParam, float movementSpeedParam);
@@ -167,6 +219,7 @@ namespace Entity {
 namespace World {
 	static std::vector<WorldObjects::Tile*> tiles;
 	static Entity::Player* activePlayer;
+	static Game::Camera camera;
 
 	static Entity::Player createPlayer(const Math::MutableVec2 startPos, const float movementSpeed) {
 		Entity::Player player{startPos, movementSpeed};

@@ -131,7 +131,14 @@ namespace Math {
 		.append(std::to_string(getLength())).append("}]");
 		return str;
 	}
+}
 
+namespace Item {
+	BaseItem::BaseItem(std::string iconPath, float scaleFactor) {
+		icon = LoadTexture(iconPath.c_str());
+		icon.width *= scaleFactor;
+		icon.height *= scaleFactor;
+	}
 }
 
 namespace Game {
@@ -148,6 +155,184 @@ namespace Game {
 		if(cam.zoom > 3.0f) cam.zoom = 3.0f;
 		if(cam.zoom < 0.5f) cam.zoom = 0.5f;
 	}
+
+	Inventory::Inventory() {
+		
+	}
+
+	void Inventory::addItem(int slot, Item::BaseItem item) {
+		content.insert(std::pair{slot, &item});
+	}
+
+	void Inventory::open() {
+		isOpen = true;
+	}
+
+	void Inventory::close() {
+		isOpen = false;
+	}
+
+	void Inventory::update() {
+		if(IsKeyPressed(KEY_E)) {
+			if(isOpen) {
+				close();
+			} else {
+				open();
+			}
+		}
+	}
+
+	void Inventory::render() {
+		if(!isOpen) return;
+		float width = WindowUtils::WINDOW_WIDTH;
+		float height = WindowUtils::WINDOW_HEIGHT;
+
+		float inventoryWidth = width-((width/10)*2);
+		float inventoryHeight = height-((height/5)*2);
+
+		if(windowSize.getX() == 0 || windowSize.getY() == 0) {
+			windowSize = Math::MutableVec2{inventoryWidth, inventoryHeight};
+		}
+
+		if(position.getX() == 0 && position.getY() == 0) {
+			position = Math::MutableVec2{width/10, height/5};
+		}
+
+		DrawRectangle(position.getX(), position.getY(), windowSize.getX(), windowSize.getY() , WHITE);
+
+		selectItem();
+		if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && activeSlot != -1) {
+			auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+			auto newSlot = getSlot(Math::MutableVec2{mousePos.x, mousePos.y});
+
+			if(newSlot != -1) {
+				// check if there even is an item to drag at the selected slot
+				// if not => do nothing, otherwise drag the item
+				if(content.count(selectedItemSlot)) {
+					if(content.count(newSlot)) return;
+					content.insert_or_assign(newSlot, content.at(selectedItemSlot));
+					content.erase(selectedItemSlot);	
+				}
+			}
+
+			activeSlot = -1;
+			selectedItemSlot = -1;
+		}
+
+		renderSlots();
+		renderSlotContent();
+	}
+
+	// TODO picked up items dont necessarily have the texture in "selected" mode compared to when they are in non-selected mode
+	void Inventory::renderSlotContent() {
+		for(auto item : content) {
+			auto pos = slots.at(item.first);
+
+			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+				auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+
+				// set some values so other methods know if the player helds an item on the cursor
+				if(getSlot(Math::MutableVec2{mousePos.x, mousePos.y}) == item.first) {
+					if(!hasItemOnCursor) {
+						hasItemOnCursor = true;
+						selectedItemSlot = activeSlot;
+					}
+				}
+
+				if(item.first == activeSlot || hasItemOnCursor) {
+					DrawTexture(item.second->icon, mousePos.x, mousePos.y, BLACK);
+				} else {
+					DrawTexture(item.second->icon, pos.getX(), pos.getY(), BLACK);
+					hasItemOnCursor = false;
+					selectedItemSlot = -1;
+				}
+				
+				for(auto otherItem : content) {
+					auto otherPos = slots.at(otherItem.first);
+					if((pos.getX() == otherPos.getX() && pos.getY() == otherPos.getY() ) || selectedItemSlot == otherItem.first) continue;
+
+					DrawTexture(otherItem.second->icon, otherPos.getX(), otherPos.getY(), BLACK);
+				}
+
+			} else {
+				DrawTexture(item.second->icon, pos.getX(), pos.getY(), BLACK);
+				hasItemOnCursor = false;
+				selectedItemSlot = -1;
+			}
+		}
+	}
+
+	void Inventory::renderSlots() {
+		int rows = windowSize.getX() / (slotSize+padding);
+		int cols = windowSize.getY() / (slotSize+padding);
+		int currentSlot = -1;
+
+		for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+				float xPos = position.getX() + ((slotSize + padding) * i);
+				float yPos = position.getY() + ((slotSize + padding) * j);
+
+				if(xPos == position.getX() || yPos == position.getY()) continue;
+				currentSlot++;
+				Rectangle slot{xPos, yPos, (float) slotSize, (float) slotSize};
+				if(activeSlot == currentSlot) {
+					DrawRectangleLinesEx(slot, 2, selectedSlotColor);
+				} else {
+					DrawRectangleLinesEx(slot, 2, inactiveSlotColor);
+				}
+				slots.insert(std::pair{currentSlot, Math::MutableVec2{xPos, yPos}});
+			}
+		}
+
+		if(label.empty()) return;
+		DrawText(label.c_str(), position.getX() + (windowSize.getX()/3), position.getY() + padding, 20, BLACK);
+	}
+
+	void Inventory::selectItem() {
+		if(!mouseInInventory() || !isOpen) return;
+		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+		activeSlot = getSlot(Math::MutableVec2{mousePos.x, mousePos.y});
+		// for(auto slot : slots) {
+		// 	auto slotPos = slot.second;
+		// 	auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+		// 	bool inX = (mousePos.x > slotPos.getX() && mousePos.x < slotPos.getX() + slotSize);
+		// 	bool inY = (mousePos.y > slotPos.getY() && mousePos.y < slotPos.getY() + slotSize);
+
+		// 	if(inX && inY) {
+		// 		activeSlot = slot.first;
+		// 	}
+		// }
+	}
+
+	bool Inventory::mouseInInventory() {
+		if(!isOpen) return false; // double check just in case "mouseInInventory" gets called on its own
+		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+		
+		bool inX = (mousePos.x > position.getX() && mousePos.x < position.getX() + windowSize.getX());
+		bool inY = (mousePos.y > position.getY() && mousePos.y < position.getY() + windowSize.getY());
+
+		return inX && inY;
+	}
+
+	void Inventory::renderSlotAt(const int pos) {
+		auto slot = slots.at(pos);
+		//DrawRectangle(slot.getX(), slot.getY(), slotSize, slotSize, BLACK);
+	}
+
+	int Inventory::getSlot(Math::MutableVec2 position) {
+		for(auto slot : slots) {
+			auto slotPos = slot.second;
+			bool inX = (position.getX() > slotPos.getX() && position.getX() < slotPos.getX() + slotSize);
+			bool inY = (position.getY() > slotPos.getY() && position.getY() < slotPos.getY() + slotSize);
+
+			if(inX && inY) {
+				return slot.first;
+			}
+		}
+
+		return -1;
+	}
+
 }
 
 // ==========
