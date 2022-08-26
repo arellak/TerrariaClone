@@ -19,7 +19,7 @@ namespace Math {
 			const float x = 0;
 			const float y = 0;
 		public:
-			ImmutableVec2(float mewX, float newY);
+			ImmutableVec2(float newX, float newY);
 
 			float getX() const;
 			float getY() const;
@@ -33,22 +33,14 @@ namespace Math {
 	};
 
 	class MutableVec2 {
-		private:
+		public:
 			float x;
 			float y;
-		public:
 			float limit;
+
 			MutableVec2();
 			MutableVec2(float newX, float newY);
 			MutableVec2(float newX, float newY, float limit);
-
-			void setX(float newY);
-			float getX() const;
-			void setY(float newY);
-			float getY() const;
-
-			void updateX(float value);
-			void updateY(float value);
 
 			bool hasLimit() const;
 
@@ -104,7 +96,6 @@ namespace Item {
 }
 
 namespace Entity {
-
 	enum class CollisionDirection {
 		LEFT,
 		RIGHT,
@@ -113,30 +104,27 @@ namespace Entity {
 	};
 
 	class BaseEntity {
-		private:
+		public:
+			const float MAX_JUMP_HEIGHT = 10; // i don't even know how to explain it
+
 			float movementSpeed;
 			float health;
-		public:
-			Texture2D tex;
 			float mass;
-			CollisionDirection collisionDirection;
+
 			bool jumping;
 			bool onGround;
+
 			Game::Direction direction;
-
-
-			const float MAX_JUMP_HEIGHT = 10; //
+			Texture2D tex;
+			CollisionDirection collisionDirection;
+			Math::MutableVec2 pos;
 
 			BaseEntity();
 			explicit BaseEntity(Math::MutableVec2 posParam);
 			BaseEntity(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
-			Math::MutableVec2 pos;
-
+			
 			void updateMovementSpeed(float newMovementSpeed);
-			float getMovementSpeed();
-
 			void updateHealth(float newHealth);
-			float getHealth() const;
 
 			void follow(Math::MutableVec2 position, float stepSize);
 			virtual void move(std::vector<WorldObjects::Tile*>& tiles) = 0;
@@ -190,23 +178,25 @@ namespace World {
 			
 		Math::MutableVec2 gravityVec{0, force};
 		float length = gravityVec.getLengthIfOneIsZero(dt) == 0 ? 1 : gravityVec.getLengthIfOneIsZero(dt);
-		gravityVec.setX(gravityVec.getX() / length);
-		gravityVec.setY(gravityVec.getY() / length);
+		gravityVec.x /= length; //(gravityVec.getX() / length);
+		gravityVec.y /= length; //(gravityVec.getY() / length);
 
-		if(activePlayer->getMovementSpeed() > 0) {
+		if(activePlayer->movementSpeed > 0) {
 			for(auto &tile : tiles) {
 				if(activePlayer->collidesTop(*tile)) {
 					activePlayer->onGround = true;
 					return;
 				}
 			}
+
+			if(activePlayer->onGround) activePlayer->onGround = false;
 			activePlayer->pos.add(gravityVec);
 		}
 	}
 
 	static void render() {
 		for(auto &tile : tiles) {
-			DrawRectangle(tile->position.getX(), tile->position.getY(), tile->size.getX(), tile->size.getY(), tile->color);
+			DrawRectangle(tile->position.x, tile->position.y, tile->size.x, tile->size.y, tile->color);
 		}
 		activePlayer->render();
 	}
@@ -219,20 +209,20 @@ namespace World {
 			Math::MutableVec2 temp;
 			float xVal = 0;
 			float yVal = 0;
-			if(vec.getX() > tile->position.getX()) {
-				xVal = tile->position.getX() - vec.getX();
+			if(vec.x > tile->position.x) {
+				xVal = tile->position.x - vec.x;
 			} else {
-				xVal = vec.getX() - tile->position.getX();
+				xVal = vec.x - tile->position.x;
 			}
 
-			if(vec.getY() > tile->position.getY()) {
-				yVal = tile->position.getY() - vec.getY();
+			if(vec.y > tile->position.y) {
+				yVal = tile->position.y - vec.y;
 			} else {
-				yVal = vec.getY() - tile->position.getY();
+				yVal = vec.y - tile->position.y;
 			}
 
-			temp.setX(xVal);
-			temp.setY(yVal);
+			temp.x = xVal;
+			temp.y = yVal;
 
 			if(currentTile == nullptr) {
 				currentLength = temp.getLength();
@@ -248,12 +238,15 @@ namespace World {
 		return currentTile;
 	}
 
-	static WorldObjects::Tile* getSelectedTile(const Math::MutableVec2 mousePos) {
-		for(auto tile : tiles) {
-			bool inX = (mousePos.getX() < tile->position.getX() + tile->size.getX()) && (mousePos.getX() > tile->position.getX());
-			bool inY = (mousePos.getY() < tile->position.getY() + tile->size.getY()) && (mousePos.getY() > tile->position.getY());
-			if(inX && inY) {
-				return tile;
+	static WorldObjects::Tile* getSelectedTile(const Camera2D cam) {
+		if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+			auto mousePos = GetScreenToWorld2D(GetMousePosition(), cam);
+			for(auto tile : tiles) {
+				bool inX = (mousePos.x < tile->position.x + tile->size.x) && (mousePos.x > tile->position.x);
+				bool inY = (mousePos.y < tile->position.y + tile->size.y) && (mousePos.y > tile->position.y);
+				if(inX && inY) {
+					return tile;
+				}
 			}
 		}
 		return nullptr;

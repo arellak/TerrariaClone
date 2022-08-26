@@ -8,8 +8,6 @@ int main() {
 	World::createTile(Math::MutableVec2{200, 400}, Math::MutableVec2{200, 20}, BLACK);
 	World::createTile(Math::MutableVec2{400, 400}, Math::MutableVec2{200, 20}, BLACK);
 	World::createTile(Math::MutableVec2{600, 420}, Math::MutableVec2{200, 20}, BLACK);
-
-
 	World::createTile(Math::MutableVec2{600, 540}, Math::MutableVec2{200, 20}, BLACK);
 
 	Game::Camera camera;
@@ -22,19 +20,17 @@ int main() {
 		ClearBackground(DARKGRAY);
 
 		World::step(25);
-		camera.follow(World::activePlayer->pos);
 
 		BeginMode2D(camera.cam);
 			World::render();
 		EndMode2D();
 
-		auto mousePos = GetScreenToWorld2D(GetMousePosition(), camera.cam);
-		if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-			auto selectedTile = World::getSelectedTile(Math::MutableVec2{mousePos.x, mousePos.y});
-			if(selectedTile != nullptr) {		
-				std::cout << selectedTile->position.toString() << std::endl;
-			}
+		auto selectedTile = World::getSelectedTile(camera.cam);
+		if(selectedTile != nullptr) {
+			std::cout << selectedTile->position.toString() << std::endl;
 		}
+
+		camera.follow(World::activePlayer->pos);
 
 		EndDrawing();
 	}

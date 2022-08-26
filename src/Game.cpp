@@ -17,63 +17,39 @@ namespace Math {
 
 	ImmutableVec2 ImmutableVec2::normalize() {
 		float length = getLength() == 0 ? 1 : getLength();
-		return ImmutableVec2{(getX() / length), (getY() / length)};
+		return ImmutableVec2{(x / length), (y / length)};
 	}
 
 	ImmutableVec2 ImmutableVec2::add(const ImmutableVec2 vec) const {
-		return ImmutableVec2{(getX() + vec.getX()), (getY() + vec.getY())};
+		return ImmutableVec2{(x + vec.x), (y + vec.y)};
 	}
 
 	ImmutableVec2 ImmutableVec2::sub(const ImmutableVec2 vec) const {
-		return ImmutableVec2{(getX() - vec.getX()), (getY() - vec.getY())};
+		return ImmutableVec2{(x - vec.x), (y - vec.y)};
 	}
 
 	float ImmutableVec2::mult(const ImmutableVec2 vec) const {
-		return (getX() * vec.getX()) + (getY() * vec.getY());
+		return (x * vec.x) + (y * vec.y);
 	}
 
 	// ==========
 
 	MutableVec2::MutableVec2() {
-		setX(0);
-		setY(0);
+		x = 0;
+		y = 0;
 		limit = 0;
 	}
 
 	MutableVec2::MutableVec2(const float newX, const float newY) {
-		setX(newX);
-		setY(newY);
+		x = newX;
+		y = newY;
 		limit = 0;
 	}
 
 	MutableVec2::MutableVec2(const float newX, const float newY, const float newLimit) {
 		limit = newLimit;
-		setX(newX);
-		setY(newY);
-	}
-
-	void MutableVec2::setX(const float newX) {
 		x = newX;
-	}
-
-	float MutableVec2::getX() const {
-		return x;
-	}
-
-	void MutableVec2::setY(const float newY) {
 		y = newY;
-	}
-
-	float MutableVec2::getY() const {
-		return y;
-	}
-
-	void MutableVec2::updateX(const float value) {
-		x += value;
-	}
-
-	void MutableVec2::updateY(const float value) {
-		y += value;
 	}
 
 	bool MutableVec2::hasLimit() const {
@@ -81,18 +57,18 @@ namespace Math {
 	}
 
 	float MutableVec2::getLength() const {
-		return std::sqrt(pow(getX(), 2) + pow(getY(), 2));
+		return std::sqrt(pow(x, 2) + pow(y, 2));
 	}
 
 	float MutableVec2::getLengthIfOneIsZero(const float divisor) const {
 		float x = 0;
 		float y = 0;
 
-		if(getX() == 0) {
+		if(x == 0) {
 			x = 5;
-			y = getY() / divisor;
-		} else if(getY() == 0) {
-			x = getX() / divisor;
+			y /= divisor;
+		} else if(y == 0) {
+			x /= divisor;
 			y = 5;
 		}
 
@@ -101,33 +77,33 @@ namespace Math {
 
 	void MutableVec2::normalize() {		
 		auto length = getLength() == 0 ? 1 : getLength();
-		setX(getX() / length);
-		setY(getY() / length);
+		x /= length;
+		y /= length;
 	}
 
 	void MutableVec2::add(MutableVec2 vec) {
-		updateX(vec.getX());
-		updateY(vec.getY());
+		x += vec.x;
+		y += vec.y;
 	}
 
 	void MutableVec2::sub(MutableVec2 vec) {
-		updateX(-vec.getX());
-		updateY(-vec.getY());
+		x -= vec.x;
+		y -= vec.y;
 	}
 
 	void MutableVec2::mult(float value) {
-		setX(getX() * value);
-		setY(getY() * value);
+		x *= value;
+		y *= value;
 	}
 
 	float MutableVec2::mult(MutableVec2 vec) {
-		return (getX() * vec.getX()) + (getY() * vec.getY());
+		return (x * vec.x) + (y * vec.y);
 	}
 
 	std::string MutableVec2::toString() const {
 		std::string str;
-		str.append("[x:{").append(std::to_string(getX()))
-		.append("}, y:{").append(std::to_string(getY())).append("}, length:{")
+		str.append("[x:{").append(std::to_string(x))
+		.append("}, y:{").append(std::to_string(y)).append("}, length:{")
 		.append(std::to_string(getLength())).append("}]");
 		return str;
 	}
@@ -141,7 +117,7 @@ namespace Game {
 	}
 
 	void Camera::follow(const Math::MutableVec2 pos) {
-		cam.target = Vector2 {pos.getX() + 20, pos.getY() + 20};
+		cam.target = Vector2 {pos.x + 20, pos.y + 20};
 		cam.offset = Vector2 {WindowUtils::WINDOW_WIDTH/2, WindowUtils::WINDOW_HEIGHT/2};
 		cam.rotation = 0.0f;
 		cam.zoom += ((float) GetMouseWheelMove() * 0.1f);
@@ -177,20 +153,12 @@ namespace Entity {
 		movementSpeed = newMovementSpeed;
 	}
 
-	float BaseEntity::getMovementSpeed() {
-		return movementSpeed;
-	}
-
 	void BaseEntity::updateHealth(const float newHealth) {
 		health = newHealth;
 	}
 
-	float BaseEntity::getHealth() const {
-		return health < 0 ? 0 : health;
-	}
-
 	void BaseEntity::follow(const Math::MutableVec2 position, const float stepSize) {
-		Math::MutableVec2 difference(position.getX(), position.getY());
+		Math::MutableVec2 difference(position.x, position.y);
 		difference.sub(pos);
 
 		difference.normalize();
@@ -204,43 +172,43 @@ namespace Entity {
 	}
 
 	void BaseEntity::render() {
-		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
+		DrawTexture(tex, pos.x, pos.y, WHITE);
 	}
 
 	bool BaseEntity::collidesBottom(const WorldObjects::Tile compare) {
-		bool inX = (pos.getX() <= compare.position.getX() + compare.size.getX()) 
-			&& (pos.getX() + tex.width >= compare.position.getX());
+		bool inX = (pos.x <= compare.position.x + compare.size.x) 
+			&& (pos.x + tex.width >= compare.position.x);
 
-		float offset = getMovementSpeed() / 2;
-		float posY = pos.getY() - offset;
-		return inX && (posY > compare.position.getY()) && (posY < compare.position.getY() + compare.size.getY());
+		float offset = movementSpeed / 2;
+		float posY = pos.y - offset;
+		return inX && (posY > compare.position.y) && (posY < compare.position.y + compare.size.y);
 	}
 
 	bool BaseEntity::collidesTop(const WorldObjects::Tile compare) {
-		bool inX = (pos.getX() <= compare.position.getX() + compare.size.getX()) 
-			&& (pos.getX() + tex.width >= compare.position.getX());
+		bool inX = (pos.x <= compare.position.x + compare.size.x) 
+			&& (pos.x + tex.width >= compare.position.x);
 
-		float offset = getMovementSpeed() / 2;
-		float posY = pos.getY() + tex.height + offset;		
-		return inX && (posY < compare.position.getY() + compare.size.getY()) && (posY > compare.position.getY());
+		float offset = movementSpeed / 2;
+		float posY = pos.y + tex.height + offset;		
+		return inX && (posY < compare.position.y + compare.size.y) && (posY > compare.position.y);
 	}
 
 	bool BaseEntity::collidesLeft(const WorldObjects::Tile compare) {
-		bool inY = (pos.getY() <= compare.position.getY() + compare.size.getY()) 
-			&& (pos.getY() + tex.height >= compare.position.getY());
+		bool inY = (pos.y <= compare.position.y + compare.size.y) 
+			&& (pos.y + tex.height >= compare.position.y);
 		
-		float offset = getMovementSpeed() / 2;
-		float posX = pos.getX() + tex.width + offset;
-		return inY && (posX < compare.position.getX() + compare.size.getX()) && (posX > compare.position.getX());
+		float offset = movementSpeed / 2;
+		float posX = pos.x + tex.width + offset;
+		return inY && (posX < compare.position.x + compare.size.x) && (posX > compare.position.x);
 	}
 
 	bool BaseEntity::collidesRight(const WorldObjects::Tile compare) {
-		bool inY = (pos.getY() <= compare.position.getY() + compare.size.getY()) 
-			&& (pos.getY() + tex.height >= compare.position.getY());
+		bool inY = (pos.y <= compare.position.y + compare.size.y) 
+			&& (pos.y + tex.height >= compare.position.y);
 		
-		float offset = getMovementSpeed() / 2;
-		float posX = pos.getX() - offset;
-		return inY && (posX > compare.position.getX()) && (posX < compare.position.getX() + compare.size.getX());
+		float offset = movementSpeed / 2;
+		float posX = pos.x - offset;
+		return inY && (posX > compare.position.x) && (posX < compare.position.x + compare.size.x);
 	}
 
 	void BaseEntity::jump(std::vector<WorldObjects::Tile*>& tiles) {
@@ -271,7 +239,7 @@ namespace Entity {
 	}
 
 	void Player::move(std::vector<WorldObjects::Tile*>& tiles) {
-		float startX = pos.getX();
+		float startX = pos.x;
 
 		if(onGround && IsKeyPressed(KEY_SPACE)) {
 			jumping = true;
@@ -281,7 +249,7 @@ namespace Entity {
 		jump(tiles);
 
 		if(IsKeyDown(KEY_A)) {
-			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
+			Math::MutableVec2 position{pos.x-movementSpeed*5, pos.y};
 			for(auto &tile : tiles) {
 				if(collidesRight(*tile)) return;
 			}
@@ -289,10 +257,10 @@ namespace Entity {
 			if(direction != Game::Direction::WEST) {
 				direction = Game::Direction::WEST;
 			}
-			follow(position, getMovementSpeed());
+			follow(position, movementSpeed);
 		}
 		if(IsKeyDown(KEY_D)) {
-			Math::MutableVec2 position{pos.getX()+getMovementSpeed()*5, pos.getY()};
+			Math::MutableVec2 position{pos.x+movementSpeed*5, pos.y};
 			for(auto &tile : tiles) {
 				if(collidesLeft(*tile)) return;
 			}
@@ -300,16 +268,16 @@ namespace Entity {
 			if(direction != Game::Direction::EAST) {
 				direction = Game::Direction::EAST;
 			}
-			follow(position, getMovementSpeed());
+			follow(position, movementSpeed);
 		}
 
 		if(IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_W)) {
-			const float MAX_HEIGHT = pos.getY()-(getMovementSpeed() * 5);
+			const float MAX_HEIGHT = pos.y-(movementSpeed * 5);
 			
-			Math::MutableVec2 position{pos.getX(), MAX_HEIGHT};
+			Math::MutableVec2 position{pos.x, MAX_HEIGHT};
 			for(auto &tile : tiles) {
 				if(collidesBottom(*tile)) {
-					pos.setY(tile->position.getY()+getMovementSpeed() + 5);
+					pos.y = tile->position.y + movementSpeed * 5;
 					return;
 				}
 			}
@@ -317,16 +285,16 @@ namespace Entity {
 			if(direction != Game::Direction::NORTH) {
 				direction = Game::Direction::NORTH;
 			}
-			follow(position, getMovementSpeed());
+			follow(position, movementSpeed);
 		}
 
-		if(pos.getX() == startX) {
+		if(pos.x == startX) {
 			direction = Game::Direction::NONE;
 		}
 	}
 
 	void Player::render() {
-		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
+		DrawTexture(tex, pos.x, pos.y, WHITE);
 	}
 
 	void Player::jump(std::vector<WorldObjects::Tile*>& tiles) {
@@ -336,12 +304,12 @@ namespace Entity {
 
 			if(jumpPixelCount >= MAX_JUMP_HEIGHT) {
 				if(direction == Game::Direction::EAST) {
-					pos.updateX(Game::FPS_COUNT/3);
+					pos.x += Game::FPS_COUNT / 3;
 				} else if(direction == Game::Direction::WEST) {
-					pos.updateX(-Game::FPS_COUNT/3);
+					pos.x -= Game::FPS_COUNT / 3;
 				}
 
-				pos.updateY(-Game::FPS_COUNT/4);
+				pos.y -= Game::FPS_COUNT/4;
 				
 				jumpPixelCount = 0;
 				jumping = false;
@@ -350,11 +318,11 @@ namespace Entity {
 
 			for(auto tile : tiles) {
 				if(collidesBottom(*tile)) {
-					pos.setY(tile->position.getY()+getMovementSpeed() + 5);
+					pos.y = tile->position.y+movementSpeed + 5;
 					return;
 				}
 			}
-			pos.updateY(-Game::FPS_COUNT/2);
+			pos.y -= Game::FPS_COUNT/2;
 		}
 	}
 
