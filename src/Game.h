@@ -10,8 +10,9 @@
 #include "raylib.h"
 
 namespace WindowUtils {
-	static constexpr int WINDOW_WIDTH = 800;
-	static constexpr int WINDOW_HEIGHT = 400;
+	static constexpr int WINDOW_WIDTH = 1280;
+	static constexpr int WINDOW_HEIGHT = 720;
+	static constexpr int FPS_COUNT = 30;
 }
 
 namespace Math {
@@ -66,7 +67,7 @@ namespace Math {
 	};
 }
 
-namespace Item {
+namespace Items {
 	enum class ItemType {
 		WEAPON,
 		TOOL,
@@ -75,6 +76,8 @@ namespace Item {
 
 	class BaseItem {
 		public:
+			static constexpr float SCALE_FACTOR = 0.5f;
+
 			int id;
 			ItemType type;
 			std::string label;
@@ -83,13 +86,16 @@ namespace Item {
 			bool repairable;
 			bool destructable;
 
-			BaseItem(std::string iconPath, float scaleFactor);
-			
+			BaseItem(std::string iconPath);
+	};
+
+	struct InventoryItem {
+		BaseItem content;
+		int amount;
 	};
 }
 
 namespace Game {
-	static const int FPS_COUNT = 30;
 
 	enum class Direction {
 		WEST,
@@ -109,39 +115,74 @@ namespace Game {
 
 	class Inventory {
 		public:
-			bool isOpen = false;
-			std::string label{"Inventory"};
-			Math::MutableVec2 position;
-			Math::MutableVec2 windowSize;
-			std::map<int, Math::MutableVec2> slots;
-			std::map<int, Item::BaseItem*> content;
+			const Color inactiveSlotColor = ColorAlpha(LIGHTGRAY, 1.0f);
+			const Color selectedSlotColor = ColorAlpha(RED, 0.7f);
+			const int slotSize = Items::BaseItem::SCALE_FACTOR * 100;
+			const int padding = 8;
+			const int MAX_SLOTS = 80;
 
-			const Color inactiveSlotColor = BLACK;
-			const Color selectedSlotColor = RED;
+			std::string label{"Inventory"};
+			Math::MutableVec2 inventoryWindowPosition;
+			Math::MutableVec2 inventoryWindowSize;
+			std::map<int, Math::MutableVec2> slotPositions;
+			std::map<int, Items::InventoryItem*> content;
 
 			bool hasItemOnCursor = false;
+			bool isOpen = false;
 
-			int activeSlot = -1;
+			int hoveredSlot = -1;
 			int selectedItemSlot = -1;
-			
-			const int slotSize = 35;
-			const int padding = 8;
 			
 			Inventory();
 
-			void open();
-			void close();
 			void update();
-			void render();
-			void renderSlots();
-			void selectItem();
-			void renderSlotAt(int pos);
-			void renderSlotContent();
+			void hoverItem();
+			void dragItem();
 
+			void renderInventory();
+			void renderSlots();
+			void renderSlotContent();
+			void renderTooltip();
+			void renderOldSlots();
 
 			bool mouseInInventory();
-			int getSlot(Math::MutableVec2 position);
-			void addItem(int slot, Item::BaseItem);
+			int getSlot(const Math::MutableVec2 position);
+			void addItem(int slot, Items::InventoryItem item);
+	};
+
+	class ItemBar {
+		public:
+			const int MAX_SLOTS = 8;
+			const int SLOT_SIZE = Items::BaseItem::SCALE_FACTOR * 100;
+			const int PADDING = 8;
+			const Color INACTIVE_SLOT_COLOR = ColorAlpha(DARKGRAY, 1.0f);
+			const Color SELECTED_SLOT_COLOR = ColorAlpha(RED, 0.7f);
+
+			Math::MutableVec2 inventoryWindowPosition;
+			Math::MutableVec2 inventoryWindowSize;
+			std::map<int, Math::MutableVec2> slotPositions;
+			std::map<int, Items::InventoryItem*> content;
+
+			int hoveredSlot = 0;
+			int selectedItemSlot = -1;
+
+			bool hasItemOnCursor = false;
+
+			ItemBar();
+
+			void update();
+			void hoverItem();
+			void dragItem();
+			void changeSlot();
+
+			void render();
+			void renderSlots();
+			void renderSlotContent();
+			void renderTooltip();
+			
+			bool mouseInInventory();
+			int getSlot(const Math::MutableVec2 position);
+			void addItem(int slot, Items::InventoryItem item);
 	};
 };
 
@@ -188,7 +229,7 @@ namespace Entity {
 			void updateHealth(float newHealth);
 			float getHealth() const;
 
-			void follow(Math::MutableVec2 position, float stepSize);
+			void moveTo(Math::MutableVec2 position, float stepSize);
 			virtual void move(std::vector<WorldObjects::Tile*>& tiles) = 0;
 			virtual void update(std::vector<WorldObjects::Tile*>& tiles);
 			virtual void render();
