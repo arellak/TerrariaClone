@@ -157,30 +157,79 @@ namespace Game {
 		// if(cam.zoom > 3.0f) cam.zoom = 3.0f;
 		// if(cam.zoom < 0.5f) cam.zoom = 0.5f;
 	}
+}
 
+namespace Entity {
 	Inventory::Inventory() {
 		float width = WindowUtils::WINDOW_WIDTH;
 		float height = WindowUtils::WINDOW_HEIGHT;
 
-		float inventoryWidth = width-((width/10)*2);
-		float inventoryHeight = height-((height/5)*2);
+		// float inventoryWidth = width-((width/10)*2);
+		// float inventoryHeight = height-((height/5)*2);
+
+		float inventoryWidth = width/2 - PADDING;
+		float inventoryHeight = height/2;
 
 		if(inventoryWindowSize.getX() == 0 || inventoryWindowSize.getY() == 0) {
 			inventoryWindowSize = Math::MutableVec2{inventoryWidth, inventoryHeight};
 		}
 
 		if(inventoryWindowPosition.getX() == 0 && inventoryWindowPosition.getY() == 0) {
-			inventoryWindowPosition = Math::MutableVec2{width/10, height/5};
+			inventoryWindowPosition = Math::MutableVec2{(width/2)-(inventoryWidth/2), (height/2)-(inventoryHeight/2)};
+		}
+
+		initSlotPositions();	
+	}
+
+	void Inventory::initSlotPositions() {
+		int counter = 0;
+		int rows = 1;
+		int currentSlot = 0;
+
+		// init positions for the normal storage slots
+		for(int i = 1; i < MAX_SLOTS+1; i++) {
+			counter++;
+			float xPos = inventoryWindowPosition.getX() + ((SLOT_SIZE + PADDING)*counter);
+			float yPos = inventoryWindowPosition.getY() + ((SLOT_SIZE + PADDING)*rows);
+
+			if(xPos > ((inventoryWindowPosition.getX() + inventoryWindowSize.getX())) - (SLOT_SIZE + PADDING)) {
+				xPos = inventoryWindowPosition.getX() + ((SLOT_SIZE + PADDING));
+				counter = 1;
+				rows++;
+				yPos = inventoryWindowPosition.getY() + ((SLOT_SIZE + PADDING)*rows);
+			}
+
+			if(yPos > (inventoryWindowPosition.getY()+inventoryWindowSize.getY()) - (SLOT_SIZE + SLOT_SIZE + PADDING)) {
+				break;
+			}
+
+			slotPositions.insert_or_assign(currentSlot, Math::MutableVec2{xPos, yPos});
+			currentSlot++;
+		}
+
+
+		// init the positions of the "itembar" in the normal inventory
+		for(int i = 1; i < MAX_SLOTS/4; i++) {
+			float xPos = inventoryWindowPosition.getX() + ((SLOT_SIZE + PADDING)*i);
+			float yPos = slotPositions.at(34).getY() + (SLOT_SIZE+PADDING*2);
+
+
+			if(xPos > ((inventoryWindowPosition.getX() + inventoryWindowSize.getX())) - (SLOT_SIZE*2)) { 
+				break;
+			}
+			
+			slotPositions.insert_or_assign(currentSlot, Math::MutableVec2{xPos, yPos});
+			currentSlot++;
 		}
 	}
 
 	void Inventory::addItem(const int slot, Items::InventoryItem item) {
-		if(content.count(slot)) {
+		if((slot < 0 || slot > MAX_SLOTS) || content.count(slot)) {
 			// show some error message
-			std::cout << "Slot is already used\n";
+			std::cout << "Slot is already used or slot is not in range\n";
 			return;
 		}
-		content.insert(std::pair{slot, &item});
+		content.insert_or_assign(slot, &item);
 	}
 
 	void Inventory::update() {
@@ -195,12 +244,26 @@ namespace Game {
 			}
 		}
 
+		int startSlot = 36;
+		// update item on wheelmovement
+		if(GetMouseWheelMove() == 1) {
+			if(itemInHand - 1 < startSlot) {
+				itemInHand = slotPositions.size()-2;
+			} else {
+				itemInHand--;
+			}
+		} else if(GetMouseWheelMove() == -1) {
+			if(itemInHand + 1 > slotPositions.size()-2) {
+				itemInHand = startSlot;
+			} else {
+				itemInHand++;
+			}
+		}
+
 		if(!isOpen) return;
 
 		hoverItem();
-		if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && hoveredSlot != -1) {
-			dragItem();
-		}
+		dragItem();
 	}
 
 	void Inventory::hoverItem() {
@@ -211,63 +274,48 @@ namespace Game {
 
 	void Inventory::dragItem() {
 		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-		auto slotAtMousePos = getSlot(Math::MutableVec2{mousePos.x, mousePos.y});
-
-		if(slotAtMousePos != -1) {
-			// check if there even is an item to drag at the selected slot
-			// if not => do nothing, otherwise drag the item
-			if(content.count(selectedItemSlot)) {
-				if(content.count(slotAtMousePos)) return;
-				content.insert_or_assign(slotAtMousePos, content.at(selectedItemSlot));
-				content.erase(selectedItemSlot);	
-			}
+		int slotAtMousePos = getSlot(Math::MutableVec2{mousePos.x, mousePos.y});
+		
+		// pick item up
+		if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && content.count(slotAtMousePos)) {
+			
 		}
 
-		hoveredSlot = -1;
-		selectedItemSlot = -1;
+		// let the item "fall down" to its new place
+		if(mouseInInventory() && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && hoveredSlot != -1) {
+			if(slotAtMousePos != -1) {
+				// check if there even is an item to drag at the selected slot
+				// if not => do nothing, otherwise drag the item
+				if(content.count(selectedItemSlot)) {
+					if(content.count(slotAtMousePos)) return;
+					content.insert_or_assign(slotAtMousePos, content.at(selectedItemSlot));
+					content.erase(selectedItemSlot);	
+				}
+			}
+
+			hoveredSlot = -1;
+			selectedItemSlot = -1;
+		}
 	}
 
 	void Inventory::renderInventory() {
+		renderItemBar();
+
 		if(!isOpen) return;
-		DrawRectangle(inventoryWindowPosition.getX(), inventoryWindowPosition.getY(), inventoryWindowSize.getX(), inventoryWindowSize.getY() , ColorAlpha(GRAY, 0.9f));
+		DrawRectangle(inventoryWindowPosition.getX(), inventoryWindowPosition.getY(), inventoryWindowSize.getX(), inventoryWindowSize.getY() , ColorAlpha(RAYWHITE, 1.0f));
+
 		renderSlots();
 		renderSlotContent();
-
-		if(hoveredSlot == -1) return;
 		renderTooltip();
 	}
 
 	void Inventory::renderSlots() {
-		int counter = 0;
-		int rows = 1;
-		int currentSlot = 0;
-
-		for(int i = 1; i < MAX_SLOTS+1; i++) {
-			counter++;
-			float xPos = inventoryWindowPosition.getX() + ((slotSize + padding)*counter);
-			float yPos = inventoryWindowPosition.getY() + ((slotSize + padding)*rows);
-
-			if(xPos > ((inventoryWindowPosition.getX() + inventoryWindowSize.getX())) - (slotSize - padding)) {
-				xPos = inventoryWindowPosition.getX() + ((slotSize + padding));
-				counter = 1;
-				rows++;
-				yPos = inventoryWindowPosition.getY() + ((slotSize + padding)*rows);
-			}
-
-			if(yPos > (inventoryWindowPosition.getY()+inventoryWindowSize.getY()) - (slotSize - padding)) {
-				break;
-			}
-
-			Rectangle slot{xPos, yPos, (float) slotSize, (float) slotSize};
-			if(hoveredSlot == currentSlot) {
-				DrawRectangleRec(slot, inactiveSlotColor);
-				DrawRectangleLinesEx(slot, 2, selectedSlotColor);
+		for(int i = 0; i < slotPositions.size(); i++) {
+			if(hoveredSlot == i) {
+				renderSlot(i, INACTIVE_SLOT_COLOR, ACTIVE_SLOT_COLOR);
 			} else {
-				DrawRectangleRec(slot, inactiveSlotColor);
-				DrawRectangleLinesEx(slot, 2, ColorAlpha(BLACK, 0.3));
+				renderSlot(i, INACTIVE_SLOT_COLOR, ColorAlpha(BLACK, 0.3f));
 			}
-			slotPositions.insert(std::pair{currentSlot, Math::MutableVec2{xPos, yPos}});
-			currentSlot++;
 		}
 
 		if(label.empty()) return;
@@ -276,7 +324,7 @@ namespace Game {
 		int textWidth = MeasureText(label.c_str(), fontSize) + (fontSize/2);
 		Math::MutableVec2 labelPosition{
 			inventoryWindowPosition.getX() + (inventoryWindowSize.getX()/2) - (textWidth/2),
-			inventoryWindowPosition.getY() + padding
+			inventoryWindowPosition.getY() + PADDING
 		};
 
 		DrawRectangle(labelPosition.getX()-5, labelPosition.getY(), textWidth, fontSize, BLACK);
@@ -289,8 +337,6 @@ namespace Game {
 			auto pos = slotPositions.at(currentItemSlot);
 
 			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-				auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-
 				// set some values so other methods know if the player helds an item on the cursor
 				if(hoveredSlot == currentItemSlot) {
 					if(!hasItemOnCursor) {
@@ -301,7 +347,9 @@ namespace Game {
 
 				if(currentItemSlot == hoveredSlot || hasItemOnCursor) {
 					auto itemOnCursor = content.at(selectedItemSlot); // the if can also be true if the current iterations item isn't the same as the hovered item, so I get the item that is currently on the cursor and render that
+					auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
 					DrawTexture(itemOnCursor->content.icon, mousePos.x, mousePos.y, BLACK);
+					
 				} else {
 					// if there is no item on the cursor and the current iterations isn't hovered over, i'll just render the item at its slot position
 					DrawTexture(item.second->content.icon, pos.getX(), pos.getY(), BLACK);
@@ -328,224 +376,7 @@ namespace Game {
 	}
 
 	void Inventory::renderTooltip() {
-		if(!content.count(hoveredSlot)) return;
-		auto hoveredItem = content.at(hoveredSlot);
-		auto itemPos = slotPositions.at(hoveredSlot);
-
-		if(hoveredItem->content.label.empty()) return;
-		int fontSize = 20;
-		int lines = 5;
-		Color fontColor = LIGHTGRAY;
-
-		float centerSlotPos = itemPos.getX() + (slotSize/2 + padding/2);
-		int textWidth = MeasureText(hoveredItem->content.label.c_str(), fontSize) + (fontSize/2);
-		Math::MutableVec2 labelPosition{centerSlotPos - (textWidth/2), itemPos.getY() - fontSize*lines};
-
-		DrawRectangle(labelPosition.getX()-5, labelPosition.getY(), textWidth, fontSize*5, DARKGRAY);
-		DrawRectangleLinesEx(Rectangle{labelPosition.getX()-5, labelPosition.getY(), (float)textWidth, (float) fontSize*5}, 2, BLACK);
-
-		// show label/name
-		DrawText(hoveredItem->content.label.c_str(), labelPosition.getX(), labelPosition.getY(), fontSize, fontColor);
-
-		// show item count
-		DrawText(std::to_string(hoveredItem->amount).c_str(), labelPosition.getX(), labelPosition.getY()+fontSize, fontSize, fontColor);
-	}
-
-	void Inventory::renderOldSlots() {
-		int rows = inventoryWindowSize.getX() / (slotSize+padding);
-		int cols = inventoryWindowSize.getY() / (slotSize+padding);
-		int currentSlot = -1;
-
-		for(int i = 0; i < rows; i++) {
-			for(int j = 0; j < cols; j++) {
-				float xPos = inventoryWindowPosition.getX() + ((slotSize + padding) * i);
-				float yPos = inventoryWindowPosition.getY() + ((slotSize + padding) * j);
-
-				if(xPos == inventoryWindowPosition.getX() || yPos == inventoryWindowPosition.getY()) continue;
-				currentSlot++;
-				Rectangle slot{xPos, yPos, (float) slotSize, (float) slotSize};
-				if(hoveredSlot == currentSlot) {
-					DrawRectangleRec(slot, inactiveSlotColor);
-					DrawRectangleLinesEx(slot, 2, selectedSlotColor);
-				} else {
-					DrawRectangleRec(slot, inactiveSlotColor);
-					DrawRectangleLinesEx(slot, 2, ColorAlpha(BLACK, 0.3));
-				}
-				slotPositions.insert(std::pair{currentSlot, Math::MutableVec2{xPos, yPos}});
-			}
-		}
-
-		// slotCount = slotPositions.size();
-
-
-		if(label.empty()) return;
-
-		int fontSize = 25;
-		int textWidth = MeasureText(label.c_str(), fontSize) + (fontSize/2);
-		Math::MutableVec2 labelPosition{
-			inventoryWindowPosition.getX() + (inventoryWindowSize.getX()/2) - (textWidth/2),
-			inventoryWindowPosition.getY() + padding
-		};
-
-		DrawRectangle(labelPosition.getX()-5, labelPosition.getY(), textWidth, fontSize, BLACK);
-		DrawText(label.c_str(), labelPosition.getX(), labelPosition.getY(), fontSize, LIGHTGRAY);
-	}
-
-	bool Inventory::mouseInInventory() {
-		if(!isOpen) return false; // double check just in case "mouseInInventory" gets called on its own
-		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-		
-		bool inX = (mousePos.x > inventoryWindowPosition.getX() && mousePos.x < inventoryWindowPosition.getX() + inventoryWindowSize.getX());
-		bool inY = (mousePos.y > inventoryWindowPosition.getY() && mousePos.y < inventoryWindowPosition.getY() + inventoryWindowSize.getY());
-
-		return inX && inY;
-	}
-
-	int Inventory::getSlot(Math::MutableVec2 position) {
-		for(auto slot : slotPositions) {
-			auto slotPos = slot.second;
-			bool inX = (position.getX() > slotPos.getX() && position.getX() < slotPos.getX() + slotSize);
-			bool inY = (position.getY() > slotPos.getY() && position.getY() < slotPos.getY() + slotSize);
-
-			if(inX && inY) {
-				return slot.first;
-			}
-		}
-		return -1;
-	}
-
-	// ================================================
-
-	ItemBar::ItemBar() {
-		float startX = WindowUtils::WINDOW_WIDTH/2 - ((MAX_SLOTS/2) * (SLOT_SIZE+PADDING));
-		float posY = WindowUtils::WINDOW_HEIGHT - (SLOT_SIZE+(PADDING*2));
-		inventoryWindowPosition = {startX, posY};
-		inventoryWindowSize = {(float) ((SLOT_SIZE+PADDING)*MAX_SLOTS)+PADDING, (float) SLOT_SIZE+(PADDING*2)};
-
-		slotPositions.insert(std::pair{0, Math::MutableVec2{inventoryWindowPosition.getX(), inventoryWindowPosition.getY()}});
-		for(int i = 1; i < MAX_SLOTS; i++) {
-			float posX = inventoryWindowPosition.getX() + ((SLOT_SIZE + PADDING) * i);
-			slotPositions.insert(std::pair{i, Math::MutableVec2{posX, inventoryWindowPosition.getY()}});
-		}
-	}
-
-	void ItemBar::update() {
-		hoverItem();
-		changeSlot();
-
-		if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && hoveredSlot != -1) {
-			dragItem();
-		}
-	}
-
-	void ItemBar::hoverItem() {
-		if(!mouseInInventory()) return;
-		
-		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-		hoveredSlot = getSlot(Math::MutableVec2{mousePos.x, mousePos.y});
-	}
-
-	void ItemBar::dragItem() {
-		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-		auto slotAtMousePos = getSlot(Math::MutableVec2{mousePos.x, mousePos.y});
-
-		if(slotAtMousePos != -1) {
-			// check if there even is an item to drag at the selected slot
-			// if not => do nothing, otherwise drag the item
-			if(content.count(selectedItemSlot)) {
-				if(content.count(slotAtMousePos)) return;
-				content.insert_or_assign(slotAtMousePos, content.at(selectedItemSlot));
-				content.erase(selectedItemSlot);	
-			}
-		}
-
-		hoveredSlot = 0;
-		selectedItemSlot = -1;
-	}
-
-	void ItemBar::changeSlot() {
-		if(GetMouseWheelMove() == 1) {
-			if(hoveredSlot + 1 > MAX_SLOTS-1) {
-				hoveredSlot = 0;
-				return;
-			}
-			hoveredSlot++;
-		} else if(GetMouseWheelMove() == -1){
-			if(hoveredSlot - 1 < 0) {
-				hoveredSlot = MAX_SLOTS-1;
-				return;
-			}
-			hoveredSlot--;
-		}
-	}
-
-	void ItemBar::render() {
-		renderSlots();
-		renderSlotContent();
-
 		if(hoveredSlot == -1) return;
-		renderTooltip();
-	}
-
-	void ItemBar::renderSlots() {
-		for(auto itemSlot : slotPositions) {
-			// DrawRectangle(, GREEN);
-			Rectangle slot{itemSlot.second.getX(), itemSlot.second.getY(), (float) SLOT_SIZE, (float) SLOT_SIZE};
-			if(hoveredSlot == itemSlot.first) {
-				DrawRectangleRec(slot, INACTIVE_SLOT_COLOR);
-				DrawRectangleLinesEx(slot, 2, SELECTED_SLOT_COLOR);
-			} else {
-				DrawRectangleRec(slot, INACTIVE_SLOT_COLOR);
-				DrawRectangleLinesEx(slot, 2, ColorAlpha(BLACK, 0.3));
-			}
-		}
-	}
-
-	void ItemBar::renderSlotContent() {
-		for(auto item : content) { // loops over each item in the contents list
-			auto currentItemSlot = item.first;
-			auto pos = slotPositions.at(currentItemSlot);
-
-			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-				auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-
-				// set some values so other methods know if the player helds an item on the cursor
-				if(hoveredSlot == currentItemSlot) {
-					if(!hasItemOnCursor) {
-						hasItemOnCursor = true;
-						selectedItemSlot = currentItemSlot;
-					}
-				}
-
-				if(currentItemSlot == hoveredSlot || hasItemOnCursor) {
-					auto itemOnCursor = content.at(selectedItemSlot); // the if can also be true if the current iterations item isn't the same as the hovered item, so I get the item that is currently on the cursor and render that
-					DrawTexture(itemOnCursor->content.icon, mousePos.x, mousePos.y, BLACK);
-				} else {
-					// if there is no item on the cursor and the current iterations isn't hovered over, i'll just render the item at its slot position
-					DrawTexture(item.second->content.icon, pos.getX(), pos.getY(), BLACK);
-					hasItemOnCursor = false;
-					selectedItemSlot = -1;
-				}
-				
-				// sadly i don't know a better way to handle this 'bug' yet
-				// i have to iterate over each item a second time(except the outer loops item) so I can render all other items in case the player picks up an item
-				// if i dont do this, all the other items in the inventory won't render as long as I have an item on the cursor
-				for(auto otherItem : content) {
-					auto otherPos = slotPositions.at(otherItem.first);
-					if((pos.getX() == otherPos.getX() && pos.getY() == otherPos.getY() ) || selectedItemSlot == otherItem.first) continue;
-
-					DrawTexture(otherItem.second->content.icon, otherPos.getX(), otherPos.getY(), BLACK);
-				}
-
-			} else {
-				DrawTexture(item.second->content.icon, pos.getX(), pos.getY(), BLACK);
-				hasItemOnCursor = false;
-				selectedItemSlot = -1;
-			}
-		}
-	}
-
-	void ItemBar::renderTooltip() {
 		if(!content.count(hoveredSlot)) return;
 		auto hoveredItem = content.at(hoveredSlot);
 		auto itemPos = slotPositions.at(hoveredSlot);
@@ -569,7 +400,43 @@ namespace Game {
 		DrawText(std::to_string(hoveredItem->amount).c_str(), labelPosition.getX(), labelPosition.getY()+fontSize, fontSize, fontColor);
 	}
 
-	bool ItemBar::mouseInInventory() {
+	void Inventory::renderItemBar() {
+		int startSlot = 36;
+		float startX = WindowUtils::WINDOW_WIDTH/2 - ((MAX_SLOTS/2) * (SLOT_SIZE+PADDING));
+		float posY = WindowUtils::WINDOW_HEIGHT - (SLOT_SIZE+(PADDING*2));
+
+		auto itemBarPos = Math::MutableVec2{startX, posY};
+		auto itemBarSize = {(float) ((SLOT_SIZE+PADDING)*MAX_SLOTS)+PADDING, (float) SLOT_SIZE+(PADDING*2)};
+		
+		for(int i = startSlot; i < slotPositions.size()-1; i++) {
+			float posX = itemBarPos.getX() + ((SLOT_SIZE + PADDING) * i);
+			Rectangle slotRec{posX, posY, (float) SLOT_SIZE, (float) SLOT_SIZE};
+
+			if(i == itemInHand) {
+				DrawRectangleRec(slotRec, ColorAlpha(INACTIVE_SLOT_COLOR, 0.8f));
+				DrawRectangleLinesEx(slotRec, 2, ACTIVE_SLOT_COLOR);
+			} else {
+				DrawRectangleRec(slotRec, ColorAlpha(INACTIVE_SLOT_COLOR, 0.8f));
+				DrawRectangleLinesEx(slotRec, 2, BLACK);
+			}
+			
+			if(content.count(i)) {
+				DrawTexture(content.at(i)->content.icon, posX, posY, BLACK);
+			}
+		}
+	}
+
+	void Inventory::renderSlot(int slot, Color firstColor, Color secondColor) {
+		auto position = slotPositions.at(slot);
+
+		Rectangle slotRec{position.getX(), position.getY(), (float) SLOT_SIZE, (float) SLOT_SIZE};
+		
+		DrawRectangleRec(slotRec, firstColor);
+		DrawRectangleLinesEx(slotRec, 2, secondColor);
+	}
+
+	bool Inventory::mouseInInventory() {
+		if(!isOpen) return false; // double check just in case "mouseInInventory" gets called on its own
 		auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
 		
 		bool inX = (mousePos.x > inventoryWindowPosition.getX() && mousePos.x < inventoryWindowPosition.getX() + inventoryWindowSize.getX());
@@ -578,7 +445,7 @@ namespace Game {
 		return inX && inY;
 	}
 
-	int ItemBar::getSlot(const Math::MutableVec2 position) {
+	int Inventory::getSlot(Math::MutableVec2 position) {
 		for(auto slot : slotPositions) {
 			auto slotPos = slot.second;
 			bool inX = (position.getX() > slotPos.getX() && position.getX() < slotPos.getX() + SLOT_SIZE);
@@ -590,15 +457,10 @@ namespace Game {
 		}
 		return -1;
 	}
-
-	void ItemBar::addItem(int slot, Items::InventoryItem item) {
-
-	}
-
-
 }
 
-// ==========
+// ================================================
+
 namespace Entity {
 	BaseEntity::BaseEntity() {
 		pos = Math::MutableVec2(0, 0);
@@ -802,6 +664,10 @@ namespace Entity {
 			}
 			pos.updateY(-WindowUtils::FPS_COUNT/2);
 		}
+	}
+
+	void Player::update(std::vector<WorldObjects::Tile*>& tiles) {
+		move(tiles);
 	}
 
 }

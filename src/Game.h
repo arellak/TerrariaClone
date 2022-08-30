@@ -96,7 +96,6 @@ namespace Items {
 }
 
 namespace Game {
-
 	enum class Direction {
 		WEST,
 		EAST,
@@ -111,78 +110,6 @@ namespace Game {
 			Camera();
 
 			void follow(Math::MutableVec2 pos);
-	};
-
-	class Inventory {
-		public:
-			const Color inactiveSlotColor = ColorAlpha(LIGHTGRAY, 1.0f);
-			const Color selectedSlotColor = ColorAlpha(RED, 0.7f);
-			const int slotSize = Items::BaseItem::SCALE_FACTOR * 100;
-			const int padding = 8;
-			const int MAX_SLOTS = 80;
-
-			std::string label{"Inventory"};
-			Math::MutableVec2 inventoryWindowPosition;
-			Math::MutableVec2 inventoryWindowSize;
-			std::map<int, Math::MutableVec2> slotPositions;
-			std::map<int, Items::InventoryItem*> content;
-
-			bool hasItemOnCursor = false;
-			bool isOpen = false;
-
-			int hoveredSlot = -1;
-			int selectedItemSlot = -1;
-			
-			Inventory();
-
-			void update();
-			void hoverItem();
-			void dragItem();
-
-			void renderInventory();
-			void renderSlots();
-			void renderSlotContent();
-			void renderTooltip();
-			void renderOldSlots();
-
-			bool mouseInInventory();
-			int getSlot(const Math::MutableVec2 position);
-			void addItem(int slot, Items::InventoryItem item);
-	};
-
-	class ItemBar {
-		public:
-			const int MAX_SLOTS = 8;
-			const int SLOT_SIZE = Items::BaseItem::SCALE_FACTOR * 100;
-			const int PADDING = 8;
-			const Color INACTIVE_SLOT_COLOR = ColorAlpha(DARKGRAY, 1.0f);
-			const Color SELECTED_SLOT_COLOR = ColorAlpha(RED, 0.7f);
-
-			Math::MutableVec2 inventoryWindowPosition;
-			Math::MutableVec2 inventoryWindowSize;
-			std::map<int, Math::MutableVec2> slotPositions;
-			std::map<int, Items::InventoryItem*> content;
-
-			int hoveredSlot = 0;
-			int selectedItemSlot = -1;
-
-			bool hasItemOnCursor = false;
-
-			ItemBar();
-
-			void update();
-			void hoverItem();
-			void dragItem();
-			void changeSlot();
-
-			void render();
-			void renderSlots();
-			void renderSlotContent();
-			void renderTooltip();
-			
-			bool mouseInInventory();
-			int getSlot(const Math::MutableVec2 position);
-			void addItem(int slot, Items::InventoryItem item);
 	};
 };
 
@@ -201,6 +128,51 @@ namespace Entity {
 		RIGHT,
 		BOTTOM,
 		TOP
+	};
+
+	class Inventory {
+		public:
+			const Color INACTIVE_SLOT_COLOR = ColorAlpha(Color{151, 151, 151}, 1.0f);
+			const Color ACTIVE_SLOT_COLOR = ColorAlpha(RED, 0.7f);
+			const int SLOT_SIZE = Items::BaseItem::SCALE_FACTOR * 100;
+			const int PADDING = 8;
+			const int MAX_SLOTS = 80;
+
+			bool hasItemOnCursor = false;
+			bool isOpen = false;
+
+			int hoveredSlot = -1;
+			int selectedItemSlot = -1;
+
+			int itemInHand = 36;
+
+			std::string label{"Inventory"};
+			
+			Math::MutableVec2 inventoryWindowPosition;
+			Math::MutableVec2 inventoryWindowSize;
+
+			std::map<int, Math::MutableVec2> slotPositions;
+			std::map<int, Items::InventoryItem*> content;
+
+			Inventory();
+
+			void initSlotPositions();
+
+			void update();
+			void hoverItem();
+			void dragItem();
+
+			void renderInventory();
+			void renderSlots();
+			void renderSlotContent();
+			void renderTooltip();
+			void renderItemBar();
+
+			void renderSlot(int slot, Color firstColor, Color secondColor);
+
+			bool mouseInInventory();
+			int getSlot(const Math::MutableVec2 position);
+			void addItem(int slot, Items::InventoryItem item);
 	};
 
 	class BaseEntity {
@@ -250,10 +222,11 @@ namespace Entity {
 			Player(Math::MutableVec2 posParam, float movementSpeedParam);
 			Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 			
-			Game::Inventory inventory;
+			Inventory inventory;
 			void move(std::vector<WorldObjects::Tile*>& tiles) override;
 			void render() override;
 			void jump(std::vector<WorldObjects::Tile*>& tiles) override;
+			void update(std::vector<WorldObjects::Tile*>& tiles) override;
 	};
 }
 
