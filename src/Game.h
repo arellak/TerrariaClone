@@ -64,23 +64,41 @@ namespace Math {
 			float mult(MutableVec2 vec);
 			void mult(float value);
 
+			MutableVec2 operator+(const MutableVec2& value) const {
+				return Math::MutableVec2{x + value.x, y + value.y};
+			}
+			
+			MutableVec2 operator-(const MutableVec2& value) const {
+				return Math::MutableVec2{x - value.x, y - value.y};
+			}
+
+			MutableVec2 operator*(const size_t value) const {
+				return Math::MutableVec2{x * value, y * value};
+			}
+
+			size_t operator*(const MutableVec2& value) const {
+				return x * value.x + y * value.y;
+			}
+
+			MutableVec2 operator%(const size_t value) const {
+				return MutableVec2{(float) ((int) x % value), (float) ((int) y %value)};
+			}
+
+			bool operator==(const MutableVec2& value) {
+				return (x == value.x) && (y == value.y);
+			}
+
 			std::string toString() const;
 	};
 }
 
 namespace Items {
-	enum class ItemType {
-		WEAPON,
-		TOOL,
-		USABLE,
-	};
 
 	class BaseItem {
 		public:
 			static constexpr float SCALE_FACTOR = 0.5f;
 
 			int id;
-			ItemType type;
 			std::string label;
 			Texture2D icon;
 
@@ -88,6 +106,10 @@ namespace Items {
 			bool destructable;
 
 			BaseItem(std::string iconPath);
+	};
+
+	class BlockItem : public BaseItem {
+		
 	};
 
 	struct InventoryItem {
@@ -119,7 +141,7 @@ namespace WorldObjects {
 			Math::MutableVec2 position;
 			Math::MutableVec2 size;
 			Color color;
-			// Texture2D texture;
+			Texture2D *texture;
 	};
 }
 
@@ -174,6 +196,8 @@ namespace Entity {
 			bool mouseInInventory();
 			int getSlot(const Math::MutableVec2 position);
 			void addItem(int slot, Items::InventoryItem item);
+
+			Items::InventoryItem* getItemInHand();
 	};
 
 	class BaseEntity {
@@ -246,7 +270,7 @@ namespace World {
 	static Entity::Player createPlayer(const Math::MutableVec2 startPos, const float movementSpeed) {
 		Entity::Player player{startPos, movementSpeed};
 		activePlayer = &player;
-		player.mass = 80;
+		player.mass = 106;
 		player.tex = LoadTexture("../res/Player.png");
 		return player;
 	}
@@ -257,6 +281,27 @@ namespace World {
 		tile = {position, size, color};
 		tiles.push_back(tile);
 		return tile;
+	}
+
+	static WorldObjects::Tile createTile(Math::MutableVec2 position, Texture2D texture) {
+		WorldObjects::Tile tile;
+		if(tileAlreadyExists(position)) return tile;
+		tile = {position, Math::MutableVec2{(float) texture.width, (float) texture.height}, BLACK, &texture};
+		tiles.push_back(tile);
+		return tile;
+	}
+
+
+	//TODO find a way to properly remove a tile
+	static void removeTile(Math::MutableVec2 position) {
+		int pos = 0;
+		for(int i = 0; i < tiles.size(); i++) {
+			auto tile = tiles.at(i);
+			if(tile.position == position) {
+				pos = i;
+				break;
+			}
+		}
 	}
 
 	static void step(const float dt) {
@@ -283,7 +328,12 @@ namespace World {
 
 	static void render() {
 		for(auto &tile : tiles) {
-			DrawRectangle(tile.position.getX(), tile.position.getY(), tile.size.getX(), tile.size.getY(), tile.color);
+			if(tile.texture != nullptr) {
+				DrawTextureEx(*tile.texture, Vector2{tile.position.getX(), tile.position.getY()}, 0.0f, 0.64f, BLACK);
+				// DrawTexture(*tile.texture, tile.position.getX(), tile.position.getY(), BLACK);
+			} else {
+				DrawRectangle(tile.position.getX(), tile.position.getY(), tile.size.getX(), tile.size.getY(), tile.color);
+			}
 		}
 		activePlayer->render();
 	}

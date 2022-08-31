@@ -225,6 +225,11 @@ namespace Entity {
 		content.insert_or_assign(slot, &item);
 	}
 
+	Items::InventoryItem* Inventory::getItemInHand() {
+		if(!content.count(itemInHand)) return nullptr;
+		return content.at(itemInHand);
+	}
+
 	void Inventory::update() {
 		if(IsKeyPressed(KEY_E)) {
 			if(isOpen) {
@@ -282,7 +287,7 @@ namespace Entity {
 				if(content.count(selectedItemSlot)) {
 					if(content.count(slotAtMousePos)) return;
 					content.insert_or_assign(slotAtMousePos, content.at(selectedItemSlot));
-					content.erase(selectedItemSlot);	
+					content.erase(selectedItemSlot);
 				}
 			}
 

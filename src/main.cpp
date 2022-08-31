@@ -11,18 +11,18 @@ int main() {
 
 	auto firstItem = Items::BaseItem{"../res/penisItem.png"};
 	firstItem.label = "Penis Item 1";
-	auto secondItem = Items::BaseItem{"../res/penisItem2.png"};
-	secondItem.label = "Penis Item 2";
+	auto secondItem = Items::BaseItem{"../res/blockItem.png"};
+	secondItem.label = "Test Block Item";
 
 	auto thirdItem = Items::BaseItem{"../res/japaneseItem.png"};
 	thirdItem.label = "Japanese Item";
 
-	player.inventory.addItem(0, Items::InventoryItem{secondItem, 2});
+	player.inventory.addItem(0, Items::InventoryItem{secondItem, 25});
 	player.inventory.addItem(10, Items::InventoryItem{thirdItem, 2});
 	player.inventory.addItem(3, Items::InventoryItem{firstItem, 5});
 
-	for(int i = 0; i < 40; i++) {
-		World::createTile(Math::MutableVec2{350.0f + (i * WindowUtils::TILE_SIZE), 350.0f}, Math::MutableVec2{WindowUtils::TILE_SIZE, WindowUtils::TILE_SIZE}, BLACK);
+	for(int i = 0; i < 100; i++) {
+		World::createTile(Math::MutableVec2{0.0f + (i * WindowUtils::TILE_SIZE), 320.0f}, Math::MutableVec2{(float) WindowUtils::TILE_SIZE, (float) WindowUtils::TILE_SIZE}, BLACK);
 	}
 
 	static int radius = 0;
@@ -51,11 +51,16 @@ int main() {
 		if(!player.inventory.isOpen) {
 			auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
 
-			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && player.inventory.getItemInHand() != nullptr) {
 				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
-				ms.setX(ms.getX() - ((int) ms.getX() % WindowUtils::TILE_SIZE));
-				ms.setY(ms.getY() - ((int) ms.getY() % WindowUtils::TILE_SIZE));
-				World::createTile(ms, Math::MutableVec2{WindowUtils::TILE_SIZE, WindowUtils::TILE_SIZE}, BLACK);
+				ms = ms - (ms % WindowUtils::TILE_SIZE);
+				World::createTile(ms, player.inventory.getItemInHand()->content.icon);
+			}
+
+			if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
+				ms = ms - (ms % WindowUtils::TILE_SIZE);
+				World::removeTile(ms);
 			}
 
 			if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
