@@ -136,10 +136,8 @@ namespace Math {
 namespace Items {
 	BaseItem::BaseItem(std::string iconPath) {
 		icon = LoadTexture(iconPath.c_str());
-		if(SCALE_FACTOR > 0) {
-			icon.width *= SCALE_FACTOR;
-			icon.height *= SCALE_FACTOR;
-		}
+		icon.width *= SCALE_FACTOR;
+		icon.height *= SCALE_FACTOR;
 	}
 }
 
@@ -150,9 +148,9 @@ namespace Game {
 	}
 
 	void Camera::follow(const Math::MutableVec2 pos) {
-		cam.target = Vector2 {pos.getX() + 20, pos.getY() + 20};
+		cam.target = Vector2 {pos.getX()+20, pos.getY()-30};
 		cam.offset = Vector2 {WindowUtils::WINDOW_WIDTH/2, WindowUtils::WINDOW_HEIGHT/2};
-		cam.rotation = 0.0f;
+		// cam.rotation = 0.0f;
 		// cam.zoom += ((float) GetMouseWheelMove() * 0.1f);
 		// if(cam.zoom > 3.0f) cam.zoom = 3.0f;
 		// if(cam.zoom < 0.5f) cam.zoom = 0.5f;
@@ -163,9 +161,6 @@ namespace Entity {
 	Inventory::Inventory() {
 		float width = WindowUtils::WINDOW_WIDTH;
 		float height = WindowUtils::WINDOW_HEIGHT;
-
-		// float inventoryWidth = width-((width/10)*2);
-		// float inventoryHeight = height-((height/5)*2);
 
 		float inventoryWidth = width/2 - PADDING;
 		float inventoryHeight = height/2;
@@ -207,12 +202,10 @@ namespace Entity {
 			currentSlot++;
 		}
 
-
 		// init the positions of the "itembar" in the normal inventory
+		float yPos = slotPositions.at(34).getY() + (SLOT_SIZE+PADDING*2);
 		for(int i = 1; i < MAX_SLOTS/4; i++) {
 			float xPos = inventoryWindowPosition.getX() + ((SLOT_SIZE + PADDING)*i);
-			float yPos = slotPositions.at(34).getY() + (SLOT_SIZE+PADDING*2);
-
 
 			if(xPos > ((inventoryWindowPosition.getX() + inventoryWindowSize.getX())) - (SLOT_SIZE*2)) { 
 				break;
@@ -509,7 +502,7 @@ namespace Entity {
 		pos.add(difference);
 	}
 
-	void BaseEntity::update(std::vector<WorldObjects::Tile*>& tiles) {
+	void BaseEntity::update(std::vector<WorldObjects::Tile>& tiles) {
 		move(tiles);
 	}
 
@@ -553,7 +546,7 @@ namespace Entity {
 		return inY && (posX > compare.position.getX()) && (posX < compare.position.getX() + compare.size.getX());
 	}
 
-	void BaseEntity::jump(std::vector<WorldObjects::Tile*>& tiles) {}
+	void BaseEntity::jump(std::vector<WorldObjects::Tile>& tiles) {}
 
 	// ==========
 
@@ -578,7 +571,7 @@ namespace Entity {
 		direction = Game::Direction::NONE;
 	}
 
-	void Player::move(std::vector<WorldObjects::Tile*>& tiles) {
+	void Player::move(std::vector<WorldObjects::Tile>& tiles) {
 		float startX = pos.getX();
 
 		if(onGround && IsKeyPressed(KEY_SPACE)) {
@@ -591,7 +584,7 @@ namespace Entity {
 		if(IsKeyDown(KEY_A)) {
 			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
 			for(auto &tile : tiles) {
-				if(collidesRight(*tile)) return;
+				if(collidesRight(tile)) return;
 			}
 
 			if(direction != Game::Direction::WEST) {
@@ -602,7 +595,7 @@ namespace Entity {
 		if(IsKeyDown(KEY_D)) {
 			Math::MutableVec2 position{pos.getX()+getMovementSpeed()*5, pos.getY()};
 			for(auto &tile : tiles) {
-				if(collidesLeft(*tile)) return;
+				if(collidesLeft(tile)) return;
 			}
 
 			if(direction != Game::Direction::EAST) {
@@ -616,8 +609,8 @@ namespace Entity {
 			
 			Math::MutableVec2 position{pos.getX(), MAX_HEIGHT};
 			for(auto &tile : tiles) {
-				if(collidesBottom(*tile)) {
-					pos.setY(tile->position.getY()+getMovementSpeed() + 5);
+				if(collidesBottom(tile)) {
+					pos.setY(tile.position.getY()+getMovementSpeed() + 5);
 					return;
 				}
 			}
@@ -637,16 +630,16 @@ namespace Entity {
 		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
 	}
 
-	void Player::jump(std::vector<WorldObjects::Tile*>& tiles) {
+	void Player::jump(std::vector<WorldObjects::Tile>& tiles) {
 		static int jumpPixelCount = 0;
 		if(jumping) {
 			jumpPixelCount++;
 
 			if(jumpPixelCount >= MAX_JUMP_HEIGHT) {
 				if(direction == Game::Direction::EAST) {
-					pos.updateX(WindowUtils::FPS_COUNT/3);
+					pos.updateX(WindowUtils::FPS_COUNT/2);
 				} else if(direction == Game::Direction::WEST) {
-					pos.updateX(-WindowUtils::FPS_COUNT/3);
+					pos.updateX(-WindowUtils::FPS_COUNT/2);
 				}
 
 				pos.updateY(-WindowUtils::FPS_COUNT/4);
@@ -657,8 +650,8 @@ namespace Entity {
 			}
 
 			for(auto tile : tiles) {
-				if(collidesBottom(*tile)) {
-					pos.setY(tile->position.getY()+getMovementSpeed() + 5);
+				if(collidesBottom(tile)) {
+					pos.setY(tile.position.getY()+getMovementSpeed() + 5);
 					return;
 				}
 			}
@@ -666,7 +659,7 @@ namespace Entity {
 		}
 	}
 
-	void Player::update(std::vector<WorldObjects::Tile*>& tiles) {
+	void Player::update(std::vector<WorldObjects::Tile>& tiles) {
 		move(tiles);
 	}
 

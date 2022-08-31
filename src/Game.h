@@ -13,6 +13,7 @@ namespace WindowUtils {
 	static constexpr int WINDOW_WIDTH = 1280;
 	static constexpr int WINDOW_HEIGHT = 720;
 	static constexpr int FPS_COUNT = 30;
+	static constexpr int TILE_SIZE = 32;
 }
 
 namespace Math {
@@ -202,10 +203,10 @@ namespace Entity {
 			float getHealth() const;
 
 			void moveTo(Math::MutableVec2 position, float stepSize);
-			virtual void move(std::vector<WorldObjects::Tile*>& tiles) = 0;
-			virtual void update(std::vector<WorldObjects::Tile*>& tiles);
+			virtual void move(std::vector<WorldObjects::Tile>& tiles) = 0;
+			virtual void update(std::vector<WorldObjects::Tile>& tiles);
 			virtual void render();
-			virtual void jump(std::vector<WorldObjects::Tile*>& tiles);
+			virtual void jump(std::vector<WorldObjects::Tile>& tiles);
 
 			bool collidesBottom(WorldObjects::Tile compare);
 			bool collidesTop(WorldObjects::Tile compare);
@@ -223,17 +224,24 @@ namespace Entity {
 			Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 			
 			Inventory inventory;
-			void move(std::vector<WorldObjects::Tile*>& tiles) override;
+			void move(std::vector<WorldObjects::Tile>& tiles) override;
 			void render() override;
-			void jump(std::vector<WorldObjects::Tile*>& tiles) override;
-			void update(std::vector<WorldObjects::Tile*>& tiles) override;
+			void jump(std::vector<WorldObjects::Tile>& tiles) override;
+			void update(std::vector<WorldObjects::Tile>& tiles) override;
 	};
 }
 
 namespace World {
-	static std::vector<WorldObjects::Tile*> tiles;
+	static std::vector<WorldObjects::Tile> tiles;
 	static Entity::Player* activePlayer;
 	static Game::Camera camera;
+
+	static bool tileAlreadyExists(Math::MutableVec2 &pos) {
+		for(auto &tile : tiles) {
+			if(pos.getX() == tile.position.getX() && pos.getY() == tile.position.getY()) return true;
+		}
+		return false;
+	}
 
 	static Entity::Player createPlayer(const Math::MutableVec2 startPos, const float movementSpeed) {
 		Entity::Player player{startPos, movementSpeed};
@@ -244,8 +252,10 @@ namespace World {
 	}
 
 	static WorldObjects::Tile createTile(Math::MutableVec2 position, Math::MutableVec2 size, Color color) {
-		WorldObjects::Tile tile{position, size, color};
-		tiles.push_back(&tile);
+		WorldObjects::Tile tile;
+		if(tileAlreadyExists(position)) return tile;
+		tile = {position, size, color};
+		tiles.push_back(tile);
 		return tile;
 	}
 
@@ -262,7 +272,7 @@ namespace World {
 
 		if(activePlayer->getMovementSpeed() > 0) {
 			for(auto &tile : tiles) {
-				if(activePlayer->collidesTop(*tile)) {
+				if(activePlayer->collidesTop(tile)) {
 					activePlayer->onGround = true;
 					return;
 				}
@@ -273,7 +283,7 @@ namespace World {
 
 	static void render() {
 		for(auto &tile : tiles) {
-			DrawRectangle(tile->position.getX(), tile->position.getY(), tile->size.getX(), tile->size.getY(), tile->color);
+			DrawRectangle(tile.position.getX(), tile.position.getY(), tile.size.getX(), tile.size.getY(), tile.color);
 		}
 		activePlayer->render();
 	}
@@ -286,16 +296,16 @@ namespace World {
 			Math::MutableVec2 temp;
 			float xVal = 0;
 			float yVal = 0;
-			if(vec.getX() > tile->position.getX()) {
-				xVal = tile->position.getX() - vec.getX();
+			if(vec.getX() > tile.position.getX()) {
+				xVal = tile.position.getX() - vec.getX();
 			} else {
-				xVal = vec.getX() - tile->position.getX();
+				xVal = vec.getX() - tile.position.getX();
 			}
 
-			if(vec.getY() > tile->position.getY()) {
-				yVal = tile->position.getY() - vec.getY();
+			if(vec.getY() > tile.position.getY()) {
+				yVal = tile.position.getY() - vec.getY();
 			} else {
-				yVal = vec.getY() - tile->position.getY();
+				yVal = vec.getY() - tile.position.getY();
 			}
 
 			temp.setX(xVal);
@@ -303,24 +313,24 @@ namespace World {
 
 			if(currentTile == nullptr) {
 				currentLength = temp.getLength();
-				currentTile = tile;
+				currentTile = &tile;
 				continue;
 			}
 
 			if(temp.getLength() < currentLength) {
 				currentLength = temp.getLength();
-				currentTile = tile;
+				currentTile = &tile;
 			}
 		}
 		return currentTile;
 	}
 
 	static WorldObjects::Tile* getSelectedTile(const Math::MutableVec2 mousePos) {
-		for(auto tile : tiles) {
-			bool inX = (mousePos.getX() < tile->position.getX() + tile->size.getX()) && (mousePos.getX() > tile->position.getX());
-			bool inY = (mousePos.getY() < tile->position.getY() + tile->size.getY()) && (mousePos.getY() > tile->position.getY());
+		for(auto &tile : tiles) {
+			bool inX = (mousePos.getX() < tile.position.getX() + tile.size.getX()) && (mousePos.getX() > tile.position.getX());
+			bool inY = (mousePos.getY() < tile.position.getY() + tile.size.getY()) && (mousePos.getY() > tile.position.getY());
 			if(inX && inY) {
-				return tile;
+				return &tile;
 			}
 		}
 		return nullptr;
