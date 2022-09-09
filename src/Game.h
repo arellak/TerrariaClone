@@ -9,6 +9,8 @@
 
 #include "raylib.h"
 
+extern std::vector<Texture2D> textures;
+
 namespace WindowUtils {
 	static constexpr int WINDOW_WIDTH = 1280;
 	static constexpr int WINDOW_HEIGHT = 720;
@@ -85,7 +87,7 @@ namespace Math {
 			}
 
 			bool operator==(const MutableVec2& value) {
-				return (x == value.x) && (y == value.y);
+				return ((int) x == (int) value.x) && ((int) y == (int) value.y);
 			}
 
 			std::string toString() const;
@@ -98,14 +100,15 @@ namespace Items {
 		public:
 			static constexpr float SCALE_FACTOR = 0.5f;
 
-			int id;
+			int _id;
 			std::string label;
+			std::string _iconPath;
 			Texture2D icon;
 
 			bool repairable;
 			bool destructable;
 
-			BaseItem(std::string iconPath);
+			BaseItem(int id);
 	};
 
 	class BlockItem : public BaseItem {
@@ -141,7 +144,7 @@ namespace WorldObjects {
 			Math::MutableVec2 position;
 			Math::MutableVec2 size;
 			Color color;
-			Texture2D *texture;
+			Texture2D texture;
 	};
 }
 
@@ -262,7 +265,9 @@ namespace World {
 
 	static bool tileAlreadyExists(Math::MutableVec2 &pos) {
 		for(auto &tile : tiles) {
-			if(pos.getX() == tile.position.getX() && pos.getY() == tile.position.getY()) return true;
+			if(pos == tile.position) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -271,30 +276,36 @@ namespace World {
 		Entity::Player player{startPos, movementSpeed};
 		activePlayer = &player;
 		player.mass = 106;
-		player.tex = LoadTexture("../res/Player.png");
+		player.tex = textures.at(0);
 		return player;
 	}
 
-	static WorldObjects::Tile createTile(Math::MutableVec2 position, Math::MutableVec2 size, Color color) {
+	static WorldObjects::Tile* createTile(Math::MutableVec2 position, Math::MutableVec2 size, Color color) {
 		WorldObjects::Tile tile;
-		if(tileAlreadyExists(position)) return tile;
+		if(tileAlreadyExists(position)) return nullptr;
 		tile = {position, size, color};
 		tiles.push_back(tile);
-		return tile;
+		return &tiles.at(tiles.size()-1);
 	}
 
-	static WorldObjects::Tile createTile(Math::MutableVec2 position, Texture2D texture) {
+	// tiles are invisible when i have no item in hand and click somewhere
+	static WorldObjects::Tile* createTile(Math::MutableVec2 ms, int textureID) {
 		WorldObjects::Tile tile;
-		if(tileAlreadyExists(position)) return tile;
-		tile = {position, Math::MutableVec2{(float) texture.width, (float) texture.height}, BLACK, &texture};
+		if(tileAlreadyExists(ms)) return nullptr;
+
+		auto texture = textures.at(textureID);
+		tile.color = BLACK;
+		tile.position = ms;
+		tile.size = {(float) texture.width, (float) texture.height};
+		tile.texture = texture;
+
 		tiles.push_back(tile);
-		return tile;
+
+		return &tiles.at(tiles.size()-1);
 	}
 
-
-	//TODO find a way to properly remove a tile
 	static void removeTile(Math::MutableVec2 position) {
-		int pos = 0;
+		int pos = -1;
 		for(int i = 0; i < tiles.size(); i++) {
 			auto tile = tiles.at(i);
 			if(tile.position == position) {
@@ -302,6 +313,9 @@ namespace World {
 				break;
 			}
 		}
+		if(pos == -1) return;
+		tiles.erase(std::next(tiles.begin(), pos));
+		activePlayer->selectedTile = nullptr;
 	}
 
 	static void step(const float dt) {
@@ -328,9 +342,8 @@ namespace World {
 
 	static void render() {
 		for(auto &tile : tiles) {
-			if(tile.texture != nullptr) {
-				DrawTextureEx(*tile.texture, Vector2{tile.position.getX(), tile.position.getY()}, 0.0f, 0.64f, BLACK);
-				// DrawTexture(*tile.texture, tile.position.getX(), tile.position.getY(), BLACK);
+			if(tile.texture.width != 0) {
+				DrawTextureEx(tile.texture, Vector2{tile.position.getX(), tile.position.getY()}, 0.0f, 0.32f, BLACK);
 			} else {
 				DrawRectangle(tile.position.getX(), tile.position.getY(), tile.size.getX(), tile.size.getY(), tile.color);
 			}

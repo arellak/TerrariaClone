@@ -1,5 +1,7 @@
 #include "Game.h"
 
+std::vector<Texture2D> textures;
+
 namespace Math {
 	ImmutableVec2::ImmutableVec2(const float newX, const float newY) : x(newX), y(newY) {}
 
@@ -134,8 +136,9 @@ namespace Math {
 }
 
 namespace Items {
-	BaseItem::BaseItem(std::string iconPath) {
-		icon = LoadTexture(iconPath.c_str());
+	BaseItem::BaseItem(int id) {
+		_id = id;
+		icon = textures.at(id);
 		icon.width *= SCALE_FACTOR;
 		icon.height *= SCALE_FACTOR;
 	}
@@ -151,6 +154,7 @@ namespace Game {
 		cam.target = Vector2 {pos.getX()+20, pos.getY()-30};
 		cam.offset = Vector2 {WindowUtils::WINDOW_WIDTH/2, WindowUtils::WINDOW_HEIGHT/2};
 		// cam.rotation = 0.0f;
+		cam.zoom = 1.25f;
 		// cam.zoom += ((float) GetMouseWheelMove() * 0.1f);
 		// if(cam.zoom > 3.0f) cam.zoom = 3.0f;
 		// if(cam.zoom < 0.5f) cam.zoom = 0.5f;

@@ -6,15 +6,21 @@ int main() {
 	SetTargetFPS(WindowUtils::FPS_COUNT);
 
 	World::camera = Game::Camera{};
+	
+	textures.push_back(LoadTexture("../res/Player.png"));
+	textures.push_back(LoadTexture("../res/penisItem.png"));
+	textures.push_back(LoadTexture("../res/blockItem.png"));
+	textures.push_back(LoadTexture("../res/japaneseItem.png"));
 
 	auto player = World::createPlayer(Math::MutableVec2{400, 250}, 15);
 
-	auto firstItem = Items::BaseItem{"../res/penisItem.png"};
+	auto firstItem = Items::BaseItem{1};
 	firstItem.label = "Penis Item 1";
-	auto secondItem = Items::BaseItem{"../res/blockItem.png"};
+
+	auto secondItem = Items::BaseItem{2};
 	secondItem.label = "Test Block Item";
 
-	auto thirdItem = Items::BaseItem{"../res/japaneseItem.png"};
+	auto thirdItem = Items::BaseItem{3};
 	thirdItem.label = "Japanese Item";
 
 	player.inventory.addItem(0, Items::InventoryItem{secondItem, 25});
@@ -22,7 +28,7 @@ int main() {
 	player.inventory.addItem(3, Items::InventoryItem{firstItem, 5});
 
 	for(int i = 0; i < 100; i++) {
-		World::createTile(Math::MutableVec2{0.0f + (i * WindowUtils::TILE_SIZE), 320.0f}, Math::MutableVec2{(float) WindowUtils::TILE_SIZE, (float) WindowUtils::TILE_SIZE}, BLACK);
+		World::createTile(Math::MutableVec2{(float) (i * WindowUtils::TILE_SIZE), 320.0f}, Math::MutableVec2{(float) WindowUtils::TILE_SIZE, (float) WindowUtils::TILE_SIZE}, BLACK);
 	}
 
 	static int radius = 0;
@@ -54,7 +60,7 @@ int main() {
 			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && player.inventory.getItemInHand() != nullptr) {
 				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
 				ms = ms - (ms % WindowUtils::TILE_SIZE);
-				World::createTile(ms, player.inventory.getItemInHand()->content.icon);
+				World::createTile(ms, player.inventory.getItemInHand()->content._id);
 			}
 
 			if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
