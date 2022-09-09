@@ -14,18 +14,9 @@ int main() {
 
 	auto player = World::createPlayer(Math::MutableVec2{400, 250}, 15);
 
-	auto firstItem = Items::BaseItem{1};
-	firstItem.label = "Penis Item 1";
-
-	auto secondItem = Items::BaseItem{2};
-	secondItem.label = "Test Block Item";
-
-	auto thirdItem = Items::BaseItem{3};
-	thirdItem.label = "Japanese Item";
-
-	player.inventory.addItem(0, Items::InventoryItem{secondItem, 25});
-	player.inventory.addItem(10, Items::InventoryItem{thirdItem, 2});
-	player.inventory.addItem(3, Items::InventoryItem{firstItem, 5});
+	player.inventory.addItem(0, Items::createItem(2, "Test Block Item", 25));
+	player.inventory.addItem(10, Items::createItem(3, "Japanese Item", 3));
+	player.inventory.addItem(3, Items::createItem(1, "Penis Item 1", 25));
 
 	for(int i = 0; i < 100; i++) {
 		World::createTile(Math::MutableVec2{(float) (i * WindowUtils::TILE_SIZE), 320.0f}, Math::MutableVec2{(float) WindowUtils::TILE_SIZE, (float) WindowUtils::TILE_SIZE}, BLACK);

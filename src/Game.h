@@ -119,6 +119,12 @@ namespace Items {
 		BaseItem content;
 		int amount;
 	};
+
+	static InventoryItem createItem(int texId, const std::string label, int amount) {
+		BaseItem baseItem{texId};
+		baseItem.label = label;
+		return InventoryItem{baseItem, amount};
+	}
 }
 
 namespace Game {
