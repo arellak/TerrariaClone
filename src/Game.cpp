@@ -1,6 +1,9 @@
 #include "Game.h"
 
 std::vector<Texture2D> textures;
+std::vector<WorldObjects::Tile> tiles;
+// Entity::Player* activePlayer;
+// Game::Camera camera;
 
 namespace Math {
 	ImmutableVec2::ImmutableVec2(const float newX, const float newY) : x(newX), y(newY) {}
@@ -511,8 +514,8 @@ namespace Entity {
 		pos.add(difference);
 	}
 
-	void BaseEntity::update(std::vector<WorldObjects::Tile>& tiles) {
-		move(tiles);
+	void BaseEntity::update() {
+		move();
 	}
 
 	void BaseEntity::render() {
@@ -552,10 +555,12 @@ namespace Entity {
 		
 		float offset = getMovementSpeed() / 2;
 		float posX = pos.getX() - offset;
-		return inY && (posX > compare.position.getX()) && (posX < compare.position.getX() + compare.size.getX());
+		return inY 
+			&& (posX > compare.position.getX()
+			&&  posX < compare.position.getX() + compare.size.getX());
 	}
 
-	void BaseEntity::jump(std::vector<WorldObjects::Tile>& tiles) {}
+	void BaseEntity::jump() {}
 
 	// ==========
 
@@ -580,15 +585,20 @@ namespace Entity {
 		direction = Game::Direction::NONE;
 	}
 
-	void Player::move(std::vector<WorldObjects::Tile>& tiles) {
+	void Player::move() {
 		float startX = pos.getX();
+
+		if(IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown((KEY_R))) {
+			// reset pos if i get stuck
+			pos.setY(pos.getY()+40);
+		}
 
 		if(onGround && IsKeyPressed(KEY_SPACE)) {
 			jumping = true;
 			onGround = false;
 		}
 
-		jump(tiles);
+		jump();
 
 		if(IsKeyDown(KEY_A)) {
 			Math::MutableVec2 position{pos.getX()-getMovementSpeed()*5, pos.getY()};
@@ -639,7 +649,7 @@ namespace Entity {
 		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
 	}
 
-	void Player::jump(std::vector<WorldObjects::Tile>& tiles) {
+	void Player::jump() {
 		static int jumpPixelCount = 0;
 		if(jumping) {
 			jumpPixelCount++;
@@ -668,8 +678,8 @@ namespace Entity {
 		}
 	}
 
-	void Player::update(std::vector<WorldObjects::Tile>& tiles) {
-		move(tiles);
+	void Player::update() {
+		move();
 	}
 
 }

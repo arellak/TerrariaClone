@@ -236,10 +236,10 @@ namespace Entity {
 			float getHealth() const;
 
 			void moveTo(Math::MutableVec2 position, float stepSize);
-			virtual void move(std::vector<WorldObjects::Tile>& tiles) = 0;
-			virtual void update(std::vector<WorldObjects::Tile>& tiles);
+			virtual void move() = 0;
+			virtual void update();
 			virtual void render();
-			virtual void jump(std::vector<WorldObjects::Tile>& tiles);
+			virtual void jump();
 
 			bool collidesBottom(WorldObjects::Tile compare);
 			bool collidesTop(WorldObjects::Tile compare);
@@ -257,18 +257,17 @@ namespace Entity {
 			Player(Math::MutableVec2 posParam, float movementSpeedParam, float healthParam);
 			
 			Inventory inventory;
-			void move(std::vector<WorldObjects::Tile>& tiles) override;
+			void move() override;
 			void render() override;
-			void jump(std::vector<WorldObjects::Tile>& tiles) override;
-			void update(std::vector<WorldObjects::Tile>& tiles) override;
+			void jump() override;
+			void update() override;
 	};
 }
-
+extern std::vector<WorldObjects::Tile> tiles;
 namespace World {
-	static std::vector<WorldObjects::Tile> tiles;
 	static Entity::Player* activePlayer;
 	static Game::Camera camera;
-
+	
 	static bool tileAlreadyExists(Math::MutableVec2 &pos) {
 		for(auto &tile : tiles) {
 			if(pos == tile.position) {
@@ -294,10 +293,11 @@ namespace World {
 		return &tiles.at(tiles.size()-1);
 	}
 
-	// tiles are invisible when i have no item in hand and click somewhere
 	static WorldObjects::Tile* createTile(Math::MutableVec2 ms, int textureID) {
 		WorldObjects::Tile tile;
 		if(tileAlreadyExists(ms)) return nullptr;
+		if(activePlayer->inventory.getItemInHand()->amount-1 < 0) return nullptr;
+		activePlayer->inventory.getItemInHand()->amount--;
 
 		auto texture = textures.at(textureID);
 		tile.color = BLACK;
@@ -325,7 +325,7 @@ namespace World {
 	}
 
 	static void step(const float dt) {
-		activePlayer->update(tiles);
+		activePlayer->update();
 
 		// GRAVITY STUFF
 		float force = (activePlayer->mass * 9.81f) / dt;
@@ -405,6 +405,5 @@ namespace World {
 		return nullptr;
 	}
 };
-
 
 #endif

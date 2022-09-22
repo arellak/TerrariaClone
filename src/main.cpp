@@ -1,6 +1,5 @@
 #include "Game.h"
 
-
 int main() {
 	InitWindow(WindowUtils::WINDOW_WIDTH, WindowUtils::WINDOW_HEIGHT, "Terraria Clone");
 	SetTargetFPS(WindowUtils::FPS_COUNT);
@@ -47,22 +46,23 @@ int main() {
 
 		if(!player.inventory.isOpen) {
 			auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+			auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
+			ms = ms - (ms % WindowUtils::TILE_SIZE);
 
-			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && player.inventory.getItemInHand() != nullptr) {
-				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
-				ms = ms - (ms % WindowUtils::TILE_SIZE);
+			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) 
+				&& player.inventory.getItemInHand() != nullptr) {
 				World::createTile(ms, player.inventory.getItemInHand()->content._id);
 			}
 
 			if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
-				ms = ms - (ms % WindowUtils::TILE_SIZE);
 				World::removeTile(ms);
 			}
 
 			if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
 				radius++;
-				auto selectedTile = World::getSelectedTile(Math::MutableVec2{mousePos.x, mousePos.y});
+				auto selectedTile = World::getSelectedTile(
+					Math::MutableVec2{mousePos.x, mousePos.y}
+				);
 				if(selectedTile != nullptr) {		
 					player.selectedTile = selectedTile;
 				}
@@ -71,6 +71,11 @@ int main() {
 
 		EndDrawing();
 	}
+	/*
+	Collision error:
+	collision isn't layed out to work with the grid in the background, where all tiles are aligned to
+	so if i check for collision, i dont check with the real position of the tile but an offset
+	*/
 
 	CloseWindow();
 
