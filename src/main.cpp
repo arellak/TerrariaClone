@@ -71,13 +71,12 @@ int main() {
 
 		EndDrawing();
 	}
-	/*
-	Collision error:
-	collision isn't layed out to work with the grid in the background, where all tiles are aligned to
-	so if i check for collision, i dont check with the real position of the tile but an offset
-	*/
 
 	CloseWindow();
+
+
+	int wait;
+	std::cin >> wait;
 
 	return 0;
 }

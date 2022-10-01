@@ -540,24 +540,35 @@ namespace Entity {
 		return inX && (posY < compare.position.getY() + compare.size.getY()) && (posY > compare.position.getY());
 	}
 
-	bool BaseEntity::collidesLeft(const WorldObjects::Tile compare) {
-		bool inY = (pos.getY() <= compare.position.getY() + compare.size.getY()) 
-			&& (pos.getY() + tex.height >= compare.position.getY());
+	bool BaseEntity::collidesLeft(const WorldObjects::Tile tile) {
+		float textureWidth = tile.texture.width != 32 ? tile.texture.width * 0.32f : tile.texture.width;
+		float textureHeight = tile.texture.height != 32 ? tile.texture.height * 0.32f : tile.texture.height;
+
+		bool inY = (pos.getY() <= tile.position.getY() + textureHeight) 
+			&& (pos.getY() + tex.height >= tile.position.getY());
 		
 		float offset = getMovementSpeed() / 2;
-		float posX = pos.getX() + tex.width + offset;
-		return inY && (posX < compare.position.getX() + compare.size.getX()) && (posX > compare.position.getX());
+		float posX = pos.getX() + offset;
+
+		bool inX = (posX <= tile.position.getX() + textureWidth) 
+			&& (posX >= (tile.position.getX() - textureWidth));
+		return inY && inX;
 	}
 
-	bool BaseEntity::collidesRight(const WorldObjects::Tile compare) {
-		bool inY = (pos.getY() <= compare.position.getY() + compare.size.getY()) 
-			&& (pos.getY() + tex.height >= compare.position.getY());
+	bool BaseEntity::collidesRight(const WorldObjects::Tile tile) {
+		float textureWidth = tile.texture.width != 32 ? tile.texture.width * 0.32f : tile.texture.width;
+		float textureHeight = tile.texture.height != 32 ? tile.texture.height * 0.32f : tile.texture.height;
+
+		bool inY = (pos.getY() <= tile.position.getY() + textureHeight) 
+			&& (pos.getY() + tex.height >= tile.position.getY());
 		
 		float offset = getMovementSpeed() / 2;
-		float posX = pos.getX() - offset;
-		return inY 
-			&& (posX > compare.position.getX()
-			&&  posX < compare.position.getX() + compare.size.getX());
+		float posX = pos.getX() - offset*2;
+
+		bool inX = (posX >= tile.position.getX()
+			&&  posX <= tile.position.getX() + textureWidth);
+
+		return inY && inX;
 	}
 
 	void BaseEntity::jump() {}
