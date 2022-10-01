@@ -75,8 +75,7 @@ int main() {
 	CloseWindow();
 
 
-	int wait;
-	std::cin >> wait;
+	getchar();
 
 	return 0;
 }

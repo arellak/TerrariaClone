@@ -522,27 +522,41 @@ namespace Entity {
 		DrawTexture(tex, pos.getX(), pos.getY(), WHITE);
 	}
 
-	bool BaseEntity::collidesBottom(const WorldObjects::Tile compare) {
-		bool inX = (pos.getX() <= compare.position.getX() + compare.size.getX()) 
-			&& (pos.getX() + tex.width >= compare.position.getX());
+	bool BaseEntity::collidesBottom(const WorldObjects::Tile tile) {
+		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
+		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
+		if(textureWidth == 0 || textureHeight == 0) {
+			textureWidth = WindowUtils::TILE_SIZE;
+			textureHeight = WindowUtils::TILE_SIZE;
+		}
+
+		bool inX = (pos.getX() <= tile.position.getX() + textureWidth) 
+			&& (pos.getX() + tex.width >= tile.position.getX());
 
 		float offset = getMovementSpeed() / 2;
 		float posY = pos.getY() - offset;
-		return inX && (posY > compare.position.getY()) && (posY < compare.position.getY() + compare.size.getY());
+		return inX && (posY > tile.position.getY()) && (posY < tile.position.getY() + textureHeight);
 	}
 
-	bool BaseEntity::collidesTop(const WorldObjects::Tile compare) {
-		bool inX = (pos.getX() <= compare.position.getX() + compare.size.getX()) 
-			&& (pos.getX() + tex.width >= compare.position.getX());
+	bool BaseEntity::collidesTop(const WorldObjects::Tile tile) {
+		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
+		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
+		if(textureWidth == 0 || textureHeight == 0) {
+			textureWidth = WindowUtils::TILE_SIZE;
+			textureHeight = WindowUtils::TILE_SIZE;
+		}
+
+		bool inX = (pos.getX() <= tile.position.getX() + textureWidth) 
+			&& (pos.getX() + tex.width >= tile.position.getX());
 
 		float offset = getMovementSpeed() / 2;
-		float posY = pos.getY() + tex.height + offset;		
-		return inX && (posY < compare.position.getY() + compare.size.getY()) && (posY > compare.position.getY());
+		float posY = pos.getY() + tex.height + offset;
+		return inX && (posY < tile.position.getY() + textureHeight) && (posY > tile.position.getY());
 	}
 
 	bool BaseEntity::collidesLeft(const WorldObjects::Tile tile) {
-		float textureWidth = tile.texture.width != 32 ? tile.texture.width * 0.32f : tile.texture.width;
-		float textureHeight = tile.texture.height != 32 ? tile.texture.height * 0.32f : tile.texture.height;
+		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
+		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
 
 		bool inY = (pos.getY() <= tile.position.getY() + textureHeight) 
 			&& (pos.getY() + tex.height >= tile.position.getY());
@@ -556,8 +570,8 @@ namespace Entity {
 	}
 
 	bool BaseEntity::collidesRight(const WorldObjects::Tile tile) {
-		float textureWidth = tile.texture.width != 32 ? tile.texture.width * 0.32f : tile.texture.width;
-		float textureHeight = tile.texture.height != 32 ? tile.texture.height * 0.32f : tile.texture.height;
+		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
+		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
 
 		bool inY = (pos.getY() <= tile.position.getY() + textureHeight) 
 			&& (pos.getY() + tex.height >= tile.position.getY());
