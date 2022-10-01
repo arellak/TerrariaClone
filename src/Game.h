@@ -280,7 +280,7 @@ namespace World {
 	static Entity::Player createPlayer(const Math::MutableVec2 startPos, const float movementSpeed) {
 		Entity::Player player{startPos, movementSpeed};
 		activePlayer = &player;
-		player.mass = 106;
+		player.mass = 100;
 		player.tex = textures.at(0);
 		return player;
 	}
