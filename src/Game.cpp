@@ -162,6 +162,50 @@ namespace Game {
 		// if(cam.zoom > 3.0f) cam.zoom = 3.0f;
 		// if(cam.zoom < 0.5f) cam.zoom = 0.5f;
 	}
+
+	void MenuComponent::render() {
+		DrawText(label.c_str(), position.getX() + 10, position.getY() + 10, 15, BLUE);
+		DrawRectangle(position.getX(), position.getY(), dimensions.getX(), dimensions.getY(), ColorAlpha(WHITE, 0.6f));
+	}
+
+	void MenuComponent::onClick() {
+		Rectangle rec{position.getX(), position.getY(), dimensions.getX(), dimensions.getY()};
+		auto mousePos = GetMousePosition();
+		if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mousePos, rec)) {
+			click();
+		}
+	}
+
+	MainMenu::MainMenu() {
+		dimensions = Math::MutableVec2{400, 450};
+		position = Math::MutableVec2{WindowUtils::WINDOW_WIDTH/2 - dimensions.getX()/2, WindowUtils::WINDOW_HEIGHT/2 - dimensions.getY()/2};
+	}
+
+	MainMenu::MainMenu(Math::MutableVec2 _dimensions, Math::MutableVec2 _position) {
+		dimensions = _dimensions;
+		position = _position;
+	}
+
+	void MainMenu::render() {
+		DrawRectangle(position.getX(), position.getY(), dimensions.getX(), dimensions.getY(), ColorAlpha(BLACK, 0.8f));
+
+		for(auto &component : components) {
+			component.render();
+		}		
+	}
+
+	void MainMenu::update() {
+		for(auto &component : components) {
+			component.onClick();
+		}
+	}
+
+	void MainMenu::addComponent(MenuComponent component) {
+		component.position.setX(position.getX() + component.position.getX());
+		component.position.setY(position.getY() + component.position.getY());
+
+		components.push_back(component);
+	}
 }
 
 namespace Entity {

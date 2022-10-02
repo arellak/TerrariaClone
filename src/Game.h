@@ -128,6 +128,7 @@ namespace Items {
 }
 
 namespace Game {
+	static bool mainMenuIsOpen;
 	enum class Direction {
 		WEST,
 		EAST,
@@ -142,6 +143,30 @@ namespace Game {
 			Camera();
 
 			void follow(Math::MutableVec2 pos);
+	};
+
+	class MenuComponent {
+		public:
+			Math::MutableVec2 dimensions;
+			Math::MutableVec2 position;
+			std::string label;
+
+			void (*click)();
+
+			void render();
+			void onClick();
+	};
+	class MainMenu {
+		public:
+			MainMenu();
+			MainMenu(Math::MutableVec2 dimensions, Math::MutableVec2 position);
+
+			Math::MutableVec2 dimensions;
+			Math::MutableVec2 position;
+			std::vector<MenuComponent> components;
+			void render();
+			void update();
+			void addComponent(MenuComponent component);
 	};
 };
 

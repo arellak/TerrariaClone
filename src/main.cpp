@@ -5,6 +5,8 @@ int main() {
 	SetTargetFPS(WindowUtils::FPS_COUNT);
 
 	World::camera = Game::Camera{};
+	Game::MainMenu mainMenu;
+	Game::mainMenuIsOpen = true;
 	
 	textures.push_back(LoadTexture("../res/Player.png"));
 	textures.push_back(LoadTexture("../res/penisItem.png"));
@@ -22,51 +24,66 @@ int main() {
 	}
 
 	static int radius = 0;
+
+	Game::MenuComponent newGame;
+	newGame.label = "New Game";
+	newGame.click = [] {
+		Game::mainMenuIsOpen = false;
+	};
+	newGame.position = Math::MutableVec2{50, 50};
+	newGame.dimensions = Math::MutableVec2{100, 50};
+	
+	mainMenu.addComponent(newGame);
 	
 	while(!WindowShouldClose()) {
 		BeginDrawing();
 		ClearBackground(LIGHTGRAY);
 
-		World::step(25);
-		player.inventory.update();
-		World::camera.follow(player.pos);
+		if(!Game::mainMenuIsOpen) {
+			World::step(25);
+			player.inventory.update();
+			World::camera.follow(player.pos);
 
-		BeginMode2D(World::camera.cam);
-			World::render();
-		EndMode2D();
-		player.inventory.renderInventory();
+			BeginMode2D(World::camera.cam);
+				World::render();
+			EndMode2D();
+			player.inventory.renderInventory();
 
 
-		if(radius > 0 && radius < 25) {
-			DrawCircleLines(GetMousePosition().x, GetMousePosition().y, radius, RED);
-			radius+=3;
-		} else if(radius >= 25) {
-			radius = 0;
-		}
-
-		if(!player.inventory.isOpen) {
-			auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
-			auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
-			ms = ms - (ms % WindowUtils::TILE_SIZE);
-
-			if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) 
-				&& player.inventory.getItemInHand() != nullptr) {
-				World::createTile(ms, player.inventory.getItemInHand()->content._id);
+			if(radius > 0 && radius < 25) {
+				DrawCircleLines(GetMousePosition().x, GetMousePosition().y, radius, RED);
+				radius+=3;
+			} else if(radius >= 25) {
+				radius = 0;
 			}
 
-			if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-				World::removeTile(ms);
-			}
+			if(!player.inventory.isOpen) {
+				auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
+				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
+				ms = ms - (ms % WindowUtils::TILE_SIZE);
 
-			if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-				radius++;
-				auto selectedTile = World::getSelectedTile(
-					Math::MutableVec2{mousePos.x, mousePos.y}
-				);
-				if(selectedTile != nullptr) {		
-					player.selectedTile = selectedTile;
+				if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) 
+					&& player.inventory.getItemInHand() != nullptr) {
+					World::createTile(ms, player.inventory.getItemInHand()->content._id);
+				}
+
+				if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+					World::removeTile(ms);
+				}
+
+				if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+					radius++;
+					auto selectedTile = World::getSelectedTile(
+						Math::MutableVec2{mousePos.x, mousePos.y}
+					);
+					if(selectedTile != nullptr) {		
+						player.selectedTile = selectedTile;
+					}
 				}
 			}
+		} else {
+			mainMenu.update();
+			mainMenu.render();
 		}
 
 		EndDrawing();
