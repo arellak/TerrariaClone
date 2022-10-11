@@ -158,11 +158,15 @@ namespace Game {
 	};
 	class MainMenu {
 		public:
+			const int GAP = 20;
 			MainMenu();
 			MainMenu(Math::MutableVec2 dimensions, Math::MutableVec2 position);
 
 			Math::MutableVec2 dimensions;
 			Math::MutableVec2 position;
+
+			Math::MutableVec2 componentDimensions;
+
 			std::vector<MenuComponent> components;
 			void render();
 			void update();

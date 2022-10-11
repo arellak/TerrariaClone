@@ -30,14 +30,26 @@ int main() {
 	newGame.click = [] {
 		Game::mainMenuIsOpen = false;
 	};
-	newGame.position = Math::MutableVec2{50, 50};
-	newGame.dimensions = Math::MutableVec2{100, 50};
+	// newGame.dimensions = Math::MutableVec2{100, 50};
+
+	Game::MenuComponent loadGame;
+	loadGame.label = "Load Game";
+	loadGame.click = [] {
+		std::cout << "Load Game!" << std::endl;
+	};
+	// loadGame.dimensions = Math::MutableVec2{100, 50};
+
 	
 	mainMenu.addComponent(newGame);
+	mainMenu.addComponent(loadGame);
 	
 	while(!WindowShouldClose()) {
 		BeginDrawing();
 		ClearBackground(LIGHTGRAY);
+
+		if(IsKeyPressed(KEY_Q)) {
+			Game::mainMenuIsOpen = !Game::mainMenuIsOpen;
+		}
 
 		if(!Game::mainMenuIsOpen) {
 			World::step(25);
