@@ -164,8 +164,8 @@ namespace Game {
 	}
 
 	void MenuComponent::render() {
-		DrawText(label.c_str(), position.getX() + 10, position.getY() + 10, 15, BLUE);
 		DrawRectangle(position.getX(), position.getY(), dimensions.getX(), dimensions.getY(), ColorAlpha(WHITE, 0.6f));
+		DrawText(label.c_str(), position.getX() + 10, position.getY() + 10, 15, BLUE);
 	}
 
 	void MenuComponent::onClick() {
@@ -201,8 +201,22 @@ namespace Game {
 	}
 
 	void MainMenu::addComponent(MenuComponent component) {
-		component.position.setX(position.getX() + component.position.getX());
-		component.position.setY(position.getY() + component.position.getY());
+		if(components.size() == 0 || components.empty()) {
+			componentDimensions.setX(dimensions.getX()/2);
+			componentDimensions.setY(dimensions.getY()/8);
+
+			component.position.setX(position.getX() + GAP);
+			component.position.setY(position.getY() + GAP);
+		} else if(components.size() > 0) {
+			auto lastComponent = components.at(components.size()-1);
+			component.position.setX(lastComponent.position.getX());
+			component.position.setY(lastComponent.position.getY() + lastComponent.dimensions.getY() + GAP);
+		}
+
+		if(component.position.getY() >= position.getY() + dimensions.getY()) {
+			return;
+		}
+		component.dimensions = componentDimensions;
 
 		components.push_back(component);
 	}
