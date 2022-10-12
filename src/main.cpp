@@ -6,7 +6,7 @@ int main() {
 
 	World::camera = Game::Camera{};
 	Game::MainMenu mainMenu;
-	Game::mainMenuIsOpen = true;
+	Game::mainMenuIsOpen = false;
 	
 	textures.push_back(LoadTexture("../res/Player.png"));
 	textures.push_back(LoadTexture("../res/penisItem.png"));
@@ -23,21 +23,17 @@ int main() {
 		World::createTile(Math::MutableVec2{(float) (i * WindowUtils::TILE_SIZE), 320.0f}, Math::MutableVec2{(float) WindowUtils::TILE_SIZE, (float) WindowUtils::TILE_SIZE}, BLACK);
 	}
 
-	static int radius = 0;
-
 	Game::MenuComponent newGame;
 	newGame.label = "New Game";
 	newGame.click = [] {
 		Game::mainMenuIsOpen = false;
 	};
-	// newGame.dimensions = Math::MutableVec2{100, 50};
 
 	Game::MenuComponent loadGame;
 	loadGame.label = "Load Game";
 	loadGame.click = [] {
 		std::cout << "Load Game!" << std::endl;
 	};
-	// loadGame.dimensions = Math::MutableVec2{100, 50};
 
 	
 	mainMenu.addComponent(newGame);
@@ -61,21 +57,13 @@ int main() {
 			EndMode2D();
 			player.inventory.renderInventory();
 
-
-			if(radius > 0 && radius < 25) {
-				DrawCircleLines(GetMousePosition().x, GetMousePosition().y, radius, RED);
-				radius+=3;
-			} else if(radius >= 25) {
-				radius = 0;
-			}
-
 			if(!player.inventory.isOpen) {
 				auto mousePos = GetScreenToWorld2D(GetMousePosition(), World::camera.cam);
 				auto ms = Math::MutableVec2{mousePos.x, mousePos.y};
 				ms = ms - (ms % WindowUtils::TILE_SIZE);
 
 				if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) 
-					&& player.inventory.getItemInHand() != nullptr) {
+						&& player.inventory.getItemInHand() != nullptr) {
 					World::createTile(ms, player.inventory.getItemInHand()->content._id);
 				}
 
@@ -84,7 +72,6 @@ int main() {
 				}
 
 				if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-					radius++;
 					auto selectedTile = World::getSelectedTile(
 						Math::MutableVec2{mousePos.x, mousePos.y}
 					);
