@@ -581,8 +581,11 @@ namespace Entity {
 	}
 
 	bool BaseEntity::collidesBottom(const WorldObjects::Tile tile) {
-		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
-		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
+		float textureWidth = tile.texture.width == WindowUtils::TILE_SIZE 
+				? tile.texture.width : tile.texture.width * ((float) WindowUtils::TILE_SIZE/100);
+		float textureHeight = tile.texture.height == WindowUtils::TILE_SIZE 
+				? tile.texture.height : tile.texture.height * ((float) WindowUtils::TILE_SIZE/100);
+		
 		if(textureWidth == 0 || textureHeight == 0) {
 			textureWidth = WindowUtils::TILE_SIZE;
 			textureHeight = WindowUtils::TILE_SIZE;
@@ -597,8 +600,11 @@ namespace Entity {
 	}
 
 	bool BaseEntity::collidesTop(const WorldObjects::Tile tile) {
-		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
-		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
+		float textureWidth = tile.texture.width == WindowUtils::TILE_SIZE 
+				? tile.texture.width : tile.texture.width * ((float) WindowUtils::TILE_SIZE/100);
+		float textureHeight = tile.texture.height == WindowUtils::TILE_SIZE 
+				? tile.texture.height : tile.texture.height * ((float) WindowUtils::TILE_SIZE/100);
+		
 		if(textureWidth == 0 || textureHeight == 0) {
 			textureWidth = WindowUtils::TILE_SIZE;
 			textureHeight = WindowUtils::TILE_SIZE;
@@ -613,29 +619,34 @@ namespace Entity {
 	}
 
 	bool BaseEntity::collidesLeft(const WorldObjects::Tile tile) {
-		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
-		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
+		float textureWidth = tile.texture.width == WindowUtils::TILE_SIZE 
+				? tile.texture.width : tile.texture.width * ((float) WindowUtils::TILE_SIZE/100);
+		float textureHeight = tile.texture.height == WindowUtils::TILE_SIZE 
+				? tile.texture.height : tile.texture.height * ((float) WindowUtils::TILE_SIZE/100);
 
 		bool inY = (pos.getY() <= tile.position.getY() + textureHeight) 
 			&& (pos.getY() + tex.height >= tile.position.getY());
-		
+
 		float offset = getMovementSpeed() / 2;
 		float posX = pos.getX() + offset;
 
 		bool inX = (posX <= tile.position.getX() + textureWidth) 
-			&& (posX >= (tile.position.getX() - textureWidth));
-		return inY && inX;
+			&& (posX >= (tile.position.getX() - textureWidth/2));
+
+		return inX && inY;
 	}
 
 	bool BaseEntity::collidesRight(const WorldObjects::Tile tile) {
-		float textureWidth = tile.texture.width != WindowUtils::TILE_SIZE ? tile.texture.width * (WindowUtils::TILE_SIZE/100) : tile.texture.width;
-		float textureHeight = tile.texture.height != WindowUtils::TILE_SIZE ? tile.texture.height * (WindowUtils::TILE_SIZE/100) : tile.texture.height;
+		float textureWidth = tile.texture.width == WindowUtils::TILE_SIZE 
+				? tile.texture.width : tile.texture.width * ((float) WindowUtils::TILE_SIZE/100);
+		float textureHeight = tile.texture.height == WindowUtils::TILE_SIZE 
+				? tile.texture.height : tile.texture.height * ((float) WindowUtils::TILE_SIZE/100);
 
 		bool inY = (pos.getY() <= tile.position.getY() + textureHeight) 
 			&& (pos.getY() + tex.height >= tile.position.getY());
 		
 		float offset = getMovementSpeed() / 2;
-		float posX = pos.getX() - offset*2;
+		float posX = pos.getX() - offset;
 
 		bool inX = (posX >= tile.position.getX()
 			&&  posX <= tile.position.getX() + textureWidth);

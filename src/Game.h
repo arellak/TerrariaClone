@@ -176,10 +176,11 @@ namespace Game {
 
 namespace WorldObjects {
 	struct Tile {
-			Math::MutableVec2 position;
-			Math::MutableVec2 size;
-			Color color;
-			Texture2D texture;
+		Math::MutableVec2 position;
+		Math::MutableVec2 size;
+		Color color;
+		int textureId;
+		Texture2D texture;
 	};
 }
 
@@ -322,17 +323,18 @@ namespace World {
 		return &tiles.at(tiles.size()-1);
 	}
 
-	static WorldObjects::Tile* createTile(Math::MutableVec2 ms, int textureID) {
+	static WorldObjects::Tile* createTile(Math::MutableVec2 ms, int textureId) {
 		WorldObjects::Tile tile;
 		if(tileAlreadyExists(ms)) return nullptr;
 		if(activePlayer->inventory.getItemInHand()->amount-1 < 0) return nullptr;
 		activePlayer->inventory.getItemInHand()->amount--;
 
-		auto texture = textures.at(textureID);
+		auto texture = textures.at(textureId);
 		tile.color = BLACK;
 		tile.position = ms;
 		tile.size = {(float) texture.width, (float) texture.height};
 		tile.texture = texture;
+		tile.textureId = textureId;
 
 		tiles.push_back(tile);
 
